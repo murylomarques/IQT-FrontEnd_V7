@@ -1,0 +1,91 @@
+/* src/components/ActionTable/styles.css */
+
+.table-container {
+  background-color: #2c2c3e;
+  border-radius: 8px;
+  padding: 10px 25px 25px 25px;
+  overflow-x: auto;
+}
+
+.action-table {
+  width: 100%;
+  border-collapse: collapse; /* Mantém as bordas unidas */
+  color: #e0e0e0;
+  table-layout: fixed; /* Essencial para truncar texto */
+}
+
+/* --- A CORREÇÃO PRINCIPAL ESTÁ AQUI --- */
+
+/* 1. Removemos a borda das células individuais */
+.action-table th, .action-table td {
+  padding: 18px 10px; /* Aumentamos um pouco o padding vertical para mais respiro */
+  text-align: left;
+  vertical-align: middle;
+  /* A linha 'border-bottom' foi REMOVIDA daqui */
+}
+
+/* 2. Adicionamos uma borda mais grossa apenas ao cabeçalho (thead) */
+.action-table thead {
+  border-bottom: 2px solid #44445a;
+}
+
+/* 3. Adicionamos a borda a cada LINHA (tr) do corpo da tabela */
+.action-table tbody tr {
+  border-bottom: 1px solid #44445a;
+  transition: background-color 0.2s ease;
+}
+
+/* --- FIM DA CORREÇÃO --- */
+
+.action-table tbody tr:hover {
+  background-color: #3a3a4f;
+}
+
+.action-table thead th {
+  color: #8a8a9e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Comportamento de truncar texto com "..." */
+.action-table td span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Largura das colunas */
+.col-id { width: 8%; }
+.col-fato { width: 20%; }
+.col-causa { width: 20%; }
+.col-acao { width: 22%; }
+.col-status { width: 10%; }
+.col-data { width: 10%; }
+.col-resp { width: 12%; }
+.col-acoes { width: 8%; }
+
+/* Estilos dos Status Badges (sem alteração) */
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  display: inline-block;
+  white-space: nowrap; /* Garante que o texto do status não quebre */
+}
+.status-pendente { background-color: #f39c12; }
+.status-vencido { background-color: #d35400; }
+.status-em-execução { background-color: #3498db; }
+.status-finalizado { background-color: #2ecc71; }
+.status-não-executado { background-color: #e74c3c; }
+
+/* Célula de Ações (sem alteração) */
+.actions-cell { text-align: center; }
+.action-btn { background: none; border: none; cursor: pointer; color: #8a8a9e; font-size: 0.9rem; transition: color 0.2s; margin: 0 5px; }
+.action-btn:hover { color: #fff; }
+.no-results { text-align: center; padding: 40px; color: #a0a0b0; }

@@ -1,0 +1,96 @@
+.pdf-container {
+  width: 595px;
+  padding: 40px;
+  background-color: white;
+  font-family: 'Helvetica', sans-serif;
+  color: #333;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* Cabeçalho */
+.pdf-header {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 10px;
+}
+.pdf-header h1 {
+  margin: 0;
+  color: #007bff;
+  font-size: 18px;
+}
+.pdf-header p {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* Seções */
+.pdf-section {
+  margin-bottom: 20px;
+  page-break-inside: avoid;
+}
+.pdf-section-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-left: 3px solid #007bff;
+  padding-left: 8px;
+}
+
+/* Grid de informações */
+.pdf-info-grid::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.pdf-info-item {
+  width: 50%;
+  float: left;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  padding-right: 10px;
+}
+.pdf-info-item strong {
+  color: #555;
+}
+
+/* Checklist */
+.pdf-checklist-item {
+  border-top: 1px solid #eee;
+  padding: 10px 0;
+  page-break-inside: avoid;
+}
+.pdf-checklist-item:first-child {
+  border-top: none;
+}
+.pdf-status {
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: white;
+  text-transform: capitalize;
+}
+.status-conforme { background-color: #28a745; }
+.status-irregular { background-color: #dc3545; }
+.status-não-se-aplica, .status-nao-se-aplica { background-color: #6c757d; }
+
+.pdf-item-details p {
+  margin: 4px 0;
+}
+
+/* Imagem */
+.pdf-item-image {
+  max-width: 100%;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid #ddd;
+}
+
+/* Mensagem de carregamento */
+.pdf-loading {
+  font-style: italic;
+  color: #888;
+  margin-top: 5px;
+}

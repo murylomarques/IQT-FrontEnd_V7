@@ -1,0 +1,54 @@
+/* Sobrescreve os estilos padrão da FullCalendar */
+
+/* Cor de fundo e borda geral */
+.fc {
+  font-family: 'Inter', sans-serif;
+  border: none !important;
+}
+
+/* Estilo dos botões (Hoje, <, >) */
+.fc .fc-button-primary {
+  background-color: #531110; /* Marrom escuro */
+  border-color: #531110;
+  font-weight: 500;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #ae2e2a; /* Vermelho no hover */
+  border-color: #ae2e2a;
+}
+
+/* Título (Mês e Ano) */
+.fc .fc-toolbar-title {
+  color: #531110;
+  font-weight: 700;
+}
+
+/* Cabeçalho dos dias da semana (Dom, Seg, Ter...) */
+.fc-col-header-cell-cushion {
+  color: #ae2e2a;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+
+/* Número do dia */
+.fc .fc-daygrid-day-number {
+  color: #35302d;
+  font-weight: 500;
+  text-decoration: none !important;
+}
+
+/* Eventos coloridos */
+.fc-event {
+  border: none !important;
+  color: #ffffff !important; /* Texto branco para melhor contraste */
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Dia de hoje */
+.fc .fc-day-today {
+  background-color: #fceeeedc !important; /* Fundo avermelhado bem claro */
+}

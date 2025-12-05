@@ -1,0 +1,184 @@
+import { ThemeProvider } from 'styled-components';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+import { GlobalStyle } from './styles/GlobalStyle';
+import { theme } from './styles/theme';
+
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './routes/ProtectedRoute';
+
+import VistoriaDetalhe from './pages/VistoriaDetalhe';
+// Importação das páginas
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Fiscal from './pages/Fiscal'; 
+import Admin from './pages/Admin';
+import Agendamentos from './pages/Agendamentos';
+import Analiticos from './pages/Analiticos';
+import Backlog from './pages/Backlog';
+import AgendamentoDetalhe from './pages/AgendamentoDetalhe';
+import Cadastros from './pages/Cadastros';
+import ResolverQualidade from './pages/ResolverQualidade';
+import Agenda from './pages/Agenda';
+import VistoriaSeguranca from './pages/VistoriaSeguranca';
+import Fcalogin from './pages/FCA';
+
+import DashboardAdm from './pages/DashboardAdm';
+import DashboardSupervisor from './pages/DashboardSupervisor';
+import DashboardCoordenador from './pages/DashboardCoordenador';
+import InserirFca from './pages/InserirFca';
+
+function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
+      <Router>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+
+            {/* --- ROTAS PÚBLICAS PARA TODOS OS USUÁRIOS LOGADOS --- */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/resolver-qualidade/:id" element={<ProtectedRoute><ResolverQualidade /></ProtectedRoute>} />
+
+            {/* 'terceirizado' só pode ver Dashboard e Backlog, então Backlog é a única outra rota */}
+            <Route
+              path="/backlog"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
+                  <Backlog />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* --- ROTAS RESTRITAS PARA FISCAL E ADMIN --- */}
+            <Route
+              path="/agendamentos"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <Agendamentos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analiticos"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <Analiticos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agendamento/:id"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <AgendamentoDetalhe />
+                </ProtectedRoute>
+              }
+            />
+             <Route
+              path="/fiscal"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}> {/* Permite admin e fiscal */}
+                  <Fiscal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cadastros"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <Cadastros />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+                path="/vistoria-seguranca"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                    <VistoriaSeguranca />
+                  </ProtectedRoute>
+                }
+              />
+
+
+
+            <Route
+              path="/vistoria/:id"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <VistoriaDetalhe />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/agenda"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <Agenda />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* --- ROTA EXCLUSIVA PARA ADMIN --- */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
+
+
+
+               {/* --- NOVAS ROTAS PARA OS DASHBOARDS FCA --- */}
+            <Route
+              path="/dashboard/adm"
+              element={
+                  <DashboardAdm />
+               
+              }
+            />
+             <Route
+              path="/dashboard/supervisor"
+              element={
+                  <DashboardSupervisor />
+                
+              }
+            />
+             <Route
+              path="/dashboard/coordenador"
+              element={
+                  <DashboardCoordenador />
+
+              }
+            />
+            <Route path="/dashboard/inserir-fca" element={
+                <InserirFca />
+            } />
+
+            <Route path="/login/FCA" element={ <Fcalogin />} />
+
+
+
+
+            {/* Rota padrão para redirecionar para o login se nenhuma outra corresponder */}
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </AuthProvider>
+      </Router>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        theme="dark"
+      />
+    </ThemeProvider>
+  );
+}
+
+export default App;

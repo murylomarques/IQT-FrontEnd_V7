@@ -1,0 +1,241 @@
+/* src/pages/DashboardAdm/styles.css */
+
+/* --- VARIÁVEIS DE COR E ESTILO GERAL --- */
+:root {
+  --adm-bg-color: #16161F;
+  --adm-surface-color: #1E1E28;
+  --adm-border-color: #333344;
+  --adm-text-primary: #EAEAEA;
+  --adm-text-secondary: #A0A0B0;
+  --adm-primary-color: #8A4FFF;
+  --adm-font-family: 'Poppins', sans-serif;
+}
+
+.dashboard-adm-page {
+  background-color: var(--adm-bg-color);
+  min-height: 100vh;
+  color: var(--adm-text-primary);
+  font-family: var(--adm-font-family);
+  padding: 30px 40px;
+}
+
+/* --- CABEÇALHO DA PÁGINA --- */
+.page-header {
+  margin-bottom: 30px;
+}
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+.page-header p {
+  margin: 8px 0 0;
+  color: var(--adm-text-secondary);
+  font-size: 1.1rem;
+}
+
+/* --- SEÇÃO DE FILTROS --- */
+.dashboard-filters {
+  background-color: var(--adm-surface-color);
+  padding: 20px 25px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid var(--adm-border-color);
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+.filter-group label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--adm-text-secondary);
+}
+.filter-group input,
+.filter-group select {
+  background-color: #2c2c3e;
+  color: var(--adm-text-primary);
+  border: 1px solid var(--adm-border-color);
+  padding: 10px;
+  border-radius: 8px;
+  font-family: var(--adm-font-family);
+}
+.filter-group input:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--adm-primary-color);
+}
+
+/* --- TÍTULOS DE SEÇÃO --- */
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 40px;
+  margin-bottom: 20px;
+  border-left: 4px solid var(--adm-primary-color);
+  padding-left: 15px;
+}
+
+/* --- GRID DE KPIs --- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
+}
+
+/* --- SEÇÕES DE TABELA --- */
+.table-section {
+  margin-top: 30px;
+  background-color: var(--adm-surface-color);
+  border-radius: 12px;
+  padding: 20px 30px;
+  border: 1px solid var(--adm-border-color);
+}
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.table-header h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+.table-search {
+  min-width: 250px;
+}
+
+/* --- ESTILOS DA TABELA --- */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th, .data-table td {
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--adm-border-color);
+}
+.data-table th {
+  font-size: 0.8rem;
+  color: var(--adm-text-secondary);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.data-table tbody tr:hover {
+  background-color: #252530;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--adm-text-secondary);
+}
+
+
+.action-button {
+  background-color: var(--adm-primary-color);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.2s;
+}
+.action-button:hover {
+  background-color: #6a3add; /* Um roxo mais escuro */
+}
+.data-table td.actions-cell {
+  text-align: right;
+}
+
+/* --- ESTILOS DO MODAL --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--adm-surface-color);
+  padding: 30px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 450px;
+  border: 1px solid var(--adm-border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 25px;
+}
+.modal-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+.modal-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.modal-btn-save {
+  background-color: var(--adm-primary-color);
+  color: white;
+}
+.modal-btn-save:hover {
+  background-color: #6a3add;
+}
+.modal-btn-cancel {
+  background-color: #444;
+  color: var(--adm-text-primary);
+}
+.modal-btn-cancel:hover {
+  background-color: #555;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.export-button {
+  padding: 8px 15px;
+  background-color: #27ae60; /* Cor verde */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.export-button:hover {
+  background-color: #2ecc71;
+}
+
+.table-search {
+  margin-left: auto; /* Empurra a busca para a direita */
+}
