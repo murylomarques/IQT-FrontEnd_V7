@@ -48,7 +48,7 @@ export const vistoriaExternaQuestions = [
   { key: 'identificacao_endereco', label: 'Identificação do endereço do cliente (o endereço é o mesmo do cadastro)' },
   { key: 'conector_anilha', label: 'Drop identificado com anilha' },
   { key: 'acomodacao_drop_cto', label: 'Acomodação do drop na CTO (passar pelo grommet / cavidade)' },
-  { key: 'organizacao_drop_cto', label: 'Organização dos drops na CTO, passando pelos anéis' },
+  { key: 'organizacao_drop_cto', label: 'Organização dos drops na CTO (passando pelos anéis e preso com hellermans)' },
   { key: 'poste_cto_equipado', label: 'Poste da CTO equipado (poste de saída)' },
   { key: 'tecnico_passou_drop', label: 'Técnico passou drop novo e sem emenda' },
   { key: 'altura_drop_rede', label: 'Altura do drop acima da rede desktop' },

@@ -8,19 +8,26 @@ import ChecklistItem from '../../components/ChecklistItem';
 import { questionsMap } from './checklistData';
 
 import {
-  TextArea, SubmitButton,
-  TypeSelectorGrid, TypeButton
+  TextArea,
+  SubmitButton,
+  TypeSelectorGrid,
+  TypeButton
 } from './styles';
 
 import {
-  VistoriaContainer, Title, SectionCard, SectionTitle,
-  InfoGrid, InfoItem, InfoLabel, InfoValue
+  VistoriaContainer,
+  Title,
+  SectionCard,
+  SectionTitle,
+  InfoGrid,
+  InfoItem,
+  InfoLabel,
+  InfoValue
 } from '../../styles/GlobalStyle';
 
 const MAX_POSTES = 3;
 
 const VistoriaDetalhe = () => {
-
   const { id } = useParams();
   const navigate = useNavigate();
   const { apiFetch, user } = useAuth();
@@ -32,6 +39,9 @@ const VistoriaDetalhe = () => {
   const [checklistValues, setChecklistValues] = useState({});
   const [observacoes, setObservacoes] = useState('');
   const [postePassagemCount, setPostePassagemCount] = useState(1);
+
+  // 🔹 PERGUNTA NOVA
+  const [retornoTecnico, setRetornoTecnico] = useState(null);
 
   const [isFormValid, setIsFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,25 +63,25 @@ const VistoriaDetalhe = () => {
   };
 
   // -------------------------
-  // VALIDAÇÃO DO CHECKLIST
+  // VALIDAÇÃO
   // -------------------------
   useEffect(() => {
-    if (!vistoriaType) return setIsFormValid(false);
+    if (!vistoriaType) {
+      setIsFormValid(false);
+      return;
+    }
 
     let qs = [...(questionsMap[vistoriaType] || [])];
 
-    // adicionar postes de passagem
     for (let i = 1; i <= postePassagemCount; i++) {
-      qs.push({ key: `poste_passagem_equipado_${i}`, label: `Poste ${i}` });
+      qs.push({ key: `poste_passagem_equipado_${i}` });
     }
 
-    const ok = qs.every(q => {
+    const checklistOk = qs.every(q => {
       const item = checklistValues[q.key];
       if (!item || !item.status) return false;
 
-      // verifica se precisa de foto
       const requiresPhoto = q.requiresPhoto !== false;
-
       if (item.status === "Não Conforme" && requiresPhoto) {
         return !!item.foto;
       }
@@ -79,12 +89,13 @@ const VistoriaDetalhe = () => {
       return true;
     });
 
-    setIsFormValid(ok);
-  }, [vistoriaType, checklistValues, postePassagemCount]);
+    // 🔹 agora também exige resposta do retorno técnico
+    setIsFormValid(checklistOk && !!retornoTecnico);
 
+  }, [vistoriaType, checklistValues, postePassagemCount, retornoTecnico]);
 
   // -------------------------
-  // LOAD INICIAL
+  // LOAD
   // -------------------------
   useEffect(() => {
     const load = async () => {
@@ -99,7 +110,6 @@ const VistoriaDetalhe = () => {
     };
     load();
   }, [id, apiFetch]);
-
 
   // -------------------------
   // SUBMIT
@@ -119,6 +129,9 @@ const VistoriaDetalhe = () => {
     formData.append("tipo", vistoriaType);
     formData.append("observacoes_gerais", observacoes);
 
+    // 🔹 envio da resposta nova
+    formData.append("retorno_tecnico", retornoTecnico);
+
     Object.entries(checklistValues).forEach(([key, val]) => {
       formData.append(`checklist[${key}][status]`, val.status);
 
@@ -133,8 +146,8 @@ const VistoriaDetalhe = () => {
       const res = await fetch("https://iqt.desktop.com.br/api/api/vistorias", {
         method: "POST",
         headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user.token}`
+          Accept: "application/json",
+          Authorization: `Bearer ${user.token}`
         },
         body: formData
       });
@@ -145,18 +158,16 @@ const VistoriaDetalhe = () => {
       navigate("/fiscal");
 
     } catch (err) {
-      console.log(err);
+      console.error(err);
       toast.error("Erro ao enviar.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
   // -------------------------
   // RENDER
   // -------------------------
-
   if (loading)
     return <VistoriaContainer><Title>Carregando...</Title></VistoriaContainer>;
 
@@ -164,7 +175,6 @@ const VistoriaDetalhe = () => {
     return <VistoriaContainer><Title>Agendamento não encontrado</Title></VistoriaContainer>;
 
   const defaultQuestions = vistoriaType ? questionsMap[vistoriaType] : [];
-
 
   return (
     <VistoriaContainer>
@@ -176,36 +186,36 @@ const VistoriaDetalhe = () => {
         <SectionCard>
           <SectionTitle>Informações</SectionTitle>
           <InfoGrid>
-            <InfoItem><InfoLabel>Caso:</InfoLabel><InfoValue>{vistoriaInfo.caso || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Status:</InfoLabel><InfoValue>{vistoriaInfo.status || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Status Agendamento:</InfoLabel><InfoValue>{vistoriaInfo.statusAgendamento || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Status Laudo:</InfoLabel><InfoValue>{vistoriaInfo.statusLaudo || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Tipo de Trabalho:</InfoLabel><InfoValue>{vistoriaInfo.tipo_trabalho || 'N/A'}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Cliente:</InfoLabel><InfoValue>{vistoriaInfo.nome_conta}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Endereço:</InfoLabel><InfoValue>{vistoriaInfo.endereco}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>Técnico:</InfoLabel><InfoValue>{vistoriaInfo.nome_tecnico}</InfoValue></InfoItem>
             <InfoItem><InfoLabel>Data:</InfoLabel><InfoValue>{formatarData(vistoriaInfo.data_agendamento)}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Hora:</InfoLabel><InfoValue>{vistoriaInfo.hora_agendamento || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Período:</InfoLabel><InfoValue>{vistoriaInfo.periodo || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>CTO:</InfoLabel><InfoValue>{vistoriaInfo.cto || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Porta:</InfoLabel><InfoValue>{vistoriaInfo.porta || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Cliente:</InfoLabel><InfoValue>{vistoriaInfo.nome_conta || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Endereço:</InfoLabel><InfoValue>{vistoriaInfo.endereco || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Cidade:</InfoLabel><InfoValue>{vistoriaInfo.city || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Telefone:</InfoLabel><InfoValue>{vistoriaInfo.telefone || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Técnico:</InfoLabel><InfoValue>{vistoriaInfo.nome_tecnico || 'N/A'}</InfoValue></InfoItem>
-            <InfoItem><InfoLabel>Empresa do Técnico:</InfoLabel><InfoValue>{vistoriaInfo.empresa_tecnico || 'N/A'}</InfoValue></InfoItem>
           </InfoGrid>
         </SectionCard>
 
-
         {/* TIPO */}
         <SectionCard>
-          <SectionTitle>Tipo</SectionTitle>
+          <SectionTitle>Tipo de Vistoria</SectionTitle>
           <TypeSelectorGrid>
-            <TypeButton active={vistoriaType === "completa"} type="button" onClick={() => setVistoriaType("completa")}>Completa</TypeButton>
-            <TypeButton active={vistoriaType === "externa"} type="button" onClick={() => setVistoriaType("externa")}>Externa</TypeButton>
-            <TypeButton active={vistoriaType === "interna"} type="button" onClick={() => setVistoriaType("interna")}>Interna</TypeButton>
+            <TypeButton type="button" active={vistoriaType === "completa"} onClick={() => setVistoriaType("completa")}>Completa</TypeButton>
+            <TypeButton type="button" active={vistoriaType === "externa"} onClick={() => setVistoriaType("externa")}>Externa</TypeButton>
+            <TypeButton type="button" active={vistoriaType === "interna"} onClick={() => setVistoriaType("interna")}>Interna</TypeButton>
           </TypeSelectorGrid>
         </SectionCard>
 
+        {/* RETORNO DO TÉCNICO */}
+        <SectionCard>
+          <SectionTitle>Retorno do Técnico</SectionTitle>
+          <p>É necessário retorno do técnico?</p>
+
+          <TypeSelectorGrid>
+            <TypeButton type="button" active={retornoTecnico === "Sim"} onClick={() => setRetornoTecnico("Sim")}>Sim</TypeButton>
+            <TypeButton type="button" active={retornoTecnico === "Não"} onClick={() => setRetornoTecnico("Não")}>Não</TypeButton>
+            <TypeButton type="button" active={retornoTecnico === "Cliente recusa visita"} onClick={() => setRetornoTecnico("Cliente recusa visita")}>
+              Cliente recusa visita
+            </TypeButton>
+          </TypeSelectorGrid>
+        </SectionCard>
 
         {/* CHECKLIST */}
         {vistoriaType && (
@@ -232,30 +242,24 @@ const VistoriaDetalhe = () => {
                   itemKey={k}
                   value={checklistValues[k] || {}}
                   onChange={handleChecklistChange}
-                  requiresPhoto={true}
+                  requiresPhoto
                 />
               );
             })}
 
             {postePassagemCount < MAX_POSTES && (
-              <button
-                type="button"
-                onClick={() => setPostePassagemCount(v => v + 1)}
-                style={{ width: "100%", padding: 10, background: "#222", color: "#fff", borderRadius: 8 }}
-              >
+              <button type="button" onClick={() => setPostePassagemCount(v => v + 1)}>
                 + Adicionar Poste de Passagem
               </button>
             )}
           </SectionCard>
         )}
 
-
         {/* OBS */}
         <SectionCard>
           <SectionTitle>Observações Gerais</SectionTitle>
           <TextArea value={observacoes} onChange={e => setObservacoes(e.target.value)} />
         </SectionCard>
-
 
         <SubmitButton disabled={!isFormValid || isSubmitting}>
           {isSubmitting ? "Enviando..." : "Finalizar Vistoria"}

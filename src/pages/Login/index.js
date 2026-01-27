@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   LoginPage, FormPanel, ImagePanel, LoginForm, Title,
   InputGroup, Label, Input, StyledLink, GradientButton, Footer,
-  ButtonSpinner // 1. IMPORTE O NOVO SPINNER
+  ButtonSpinner
 } from './styles';
 
 const Login = () => {
@@ -51,12 +51,9 @@ const Login = () => {
 
     try {
       await login(email, password);
-      // Se o login for válido, o AuthContext fará o redirecionamento.
-      // A tela permanece a mesma até a navegação acontecer.
     } catch (error) {
       // O erro já é tratado no context.
     } finally {
-      // Se a chamada falhar, o setIsLoading(false) vai remover o spinner.
       setIsLoading(false);
     }
   };
@@ -87,14 +84,13 @@ const Login = () => {
 
           <StyledLink href="#">Esqueci minha senha</StyledLink>
 
-          {/* 2. ALTERE O CONTEÚDO DO BOTÃO */}
           <GradientButton type="submit" disabled={isLoading}>
             {isLoading ? <ButtonSpinner /> : 'Entrar'}
           </GradientButton>
 
           <StyledLink href="#">Ainda não tenho uma conta</StyledLink>
         </LoginForm>
-        <Footer>2024 | Desenvolvido para DESKTOP</Footer>
+        <Footer>2024 | IQT Soluções</Footer>
       </FormPanel>
       <ImagePanel />
     </LoginPage>

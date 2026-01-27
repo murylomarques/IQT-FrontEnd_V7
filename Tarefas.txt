@@ -1,0 +1,18 @@
+Pendências Gerais
+
+  [] Resultado final da vistoria
+  [] Classificação da vistoria  (Leve, moderado, grave)
+  [] Necessário retorno do técnico
+  [] Status do Backlog (Finalizado, em correção, vencido, baixa recusada...)
+  [] Nome do Técnico 
+  [] Necessário retorno do técnico: sim, não ou não se aplica
+  [] Remover nome do Técnico
+  [] Historico do laudo
+  [] Somar sepre as cidades em remover a menos q nao exeda os 10 dias 
+    
+Prioridades
+
+   
+
+
+ 
