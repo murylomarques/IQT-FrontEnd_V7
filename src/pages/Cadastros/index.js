@@ -6,13 +6,13 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { FiDownload, FiFile, FiSearch, FiPrinter, FiXCircle } from 'react-icons/fi';
 
 // --- Templates de PDF ---
 import VistoriaPdfTemplate from '../../components/VistoriaPdfTemplate';
 import VistoriaSegurancaPdfTemplate from '../../components/VistoriaSegurancaPdfTemplate';
 
-// --- Ícones ---
-import { FiDownload, FiFile, FiSearch, FiPrinter } from 'react-icons/fi';
+
 
 // --- Estilos ---
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
@@ -54,6 +54,28 @@ const convertCsvDelimiter = (csvText) => {
         output += char;
     }
     return output;
+};
+const handleInvalidarLaudoSeguranca = async (vistoriaId) => {
+  const ok = window.confirm(`Tem certeza que deseja INVALIDAR o laudo da vistoria #${vistoriaId}?`);
+  if (!ok) return;
+
+  try {
+    await apiFetch(`/api/vistorias-seguranca/${vistoriaId}/invalidar`, {
+      method: 'PATCH',
+      body: JSON.stringify({}), // se quiser mandar motivo depois, manda aqui
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // Atualiza na tela sem recarregar
+    setVistoriasSeguranca(prev =>
+      prev.map(v => (v.id === vistoriaId ? { ...v, tipo_valido: 'No' } : v))
+    );
+
+    toast.success(`Laudo #${vistoriaId} invalidado!`);
+  } catch (error) {
+    console.error(error);
+    toast.error(error?.message || 'Erro ao invalidar laudo.');
+  }
 };
 
 
@@ -335,25 +357,55 @@ const Cadastros = () => {
               }
 
               return (
-                <VistoriaListItem key={vistoria.id}>
+                <VistoriaListItem key={vistoria.id} style={vistoria.tipo_valido === 'No' ? { opacity: 0.6 } : undefined}>
                   {imageUrl ? (
                     <VistoriaImage src={imageUrl} alt="Foto da Vistoria" />
                   ) : (
-                    <div style={{ width: '80px', height: '60px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc', fontSize: '12px', borderRadius: '6px' }}>Sem Foto</div>
+                    <div style={{ width: '80px', height: '60px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc', fontSize: '12px', borderRadius: '6px' }}>
+                      Sem Foto
+                    </div>
                   )}
+
                   <span><strong>ID:</strong> {vistoria.id}</span>
                   <span style={{ flex: 1, minWidth: '150px' }}><strong>Técnico:</strong> {vistoria.nome_tecnico}</span>
                   <span><strong>Placa:</strong> {vistoria.placa}</span>
                   <span><strong>Data:</strong> {new Date(vistoria.created_at).toLocaleDateString()}</span>
 
+                  {/* ✅ Status do laudo */}
+                  <span style={{
+                    padding: '4px 8px',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    background: vistoria.tipo_valido === 'No' ? '#dc3545' : '#28a745',
+                    color: '#fff'
+                  }}>
+                    {vistoria.tipo_valido === 'No' ? 'INVÁLIDO' : 'VÁLIDO'}
+                  </span>
+
+                  {/* PDF */}
                   <PdfButton
                     onClick={() => handleGenerateSegurancaPdf({ ...vistoria, imageUrl })}
-                    disabled={generatingPdfId === vistoria.id}
-                    title={`Gerar PDF para Vistoria #${vistoria.id}`}
+                    disabled={generatingPdfId === vistoria.id || vistoria.tipo_valido === 'No'}
+                    title={vistoria.tipo_valido === 'No'
+                      ? `Laudo inválido - PDF bloqueado`
+                      : `Gerar PDF para Vistoria #${vistoria.id}`
+                    }
                   >
                     {generatingPdfId === vistoria.id ? '...' : <FiPrinter size={16} />}
                   </PdfButton>
+
+                  {/* ✅ Invalidar */}
+                  <PdfButton
+                    onClick={() => handleInvalidarLaudoSeguranca(vistoria.id)}
+                    disabled={vistoria.tipo_valido === 'No'}
+                    title={`Invalidar Laudo #${vistoria.id}`}
+                    style={{ backgroundColor: '#dc3545' }}
+                  >
+                    <FiXCircle size={16} />
+                  </PdfButton>
                 </VistoriaListItem>
+
               );
             })
           ) : (
