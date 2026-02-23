@@ -38,6 +38,9 @@ import {
 // Importando o componente de card reutilizável
 import DashboardCard from '../../components/DashboardCard/index';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
+
 const DashboardSupervisor = () => {
   // --- ESTADOS DO COMPONENTE ---
   const [tasks, setTasks] = useState([]); // Armazena TODOS os registros da API
@@ -55,12 +58,12 @@ const DashboardSupervisor = () => {
 
       if (!token) {
         toast.error('Token não encontrado. Faça login novamente.');
-        navigate('/'); // Redireciona para o login se não houver token
+        navigate('/login/FCA'); // Redireciona para o login FCA se não houver token
         return;
       }
 
-      const response = await axios.get('https://iqt.desktop.com.br/api/api/fca/registros', {
-        headers: { Authorization: token },
+      const response = await axios.get(`${API_BASE_URL}/api/fca/registros`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       setTasks(response.data);
@@ -142,9 +145,9 @@ const DashboardSupervisor = () => {
       const token = localStorage.getItem('FCA-token');
       // Rota para atualizar um registro específico
       await axios.put(
-        `https://iqt.desktop.com.br/api/api/fca/registros/${taskId}`,
+        `${API_BASE_URL}/api/fca/registros/${taskId}`,
         { status: nextStatus },
-        { headers: { Authorization: token } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Atualiza o estado local para refletir a mudança imediatamente (Atualização Otimista)

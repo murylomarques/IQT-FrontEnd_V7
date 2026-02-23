@@ -1,11 +1,14 @@
 // src/pages/InserirFca/index.jsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './styles.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
 const MAX_CHARS = 255;
 
 function InserirFca() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     tecnico: '',
     fato: '',
@@ -25,10 +28,14 @@ function InserirFca() {
     const fetchRegistros = async () => {
       try {
         const token = localStorage.getItem('FCA-token');
-        if (!token) return console.error('Token não encontrado.');
+        if (!token) {
+          console.error('Token não encontrado.');
+          navigate('/login/FCA');
+          return;
+        }
 
-        const response = await axios.get('https://iqt.desktop.com.br/api/api/fca/registros', {
-          headers: { Authorization: token },
+        const response = await axios.get(`${API_BASE_URL}/api/fca/registros`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const hoje = new Date();
@@ -100,6 +107,7 @@ function InserirFca() {
       const token = localStorage.getItem('FCA-token');
       if (!token) {
         alert("Token não encontrado. Faça login novamente.");
+        navigate('/login/FCA');
         return;
       }
 
@@ -112,8 +120,8 @@ function InserirFca() {
       };
 
       // Envia para a API (PUT ou PATCH dependendo do backend)
-      await axios.put(`https://iqt.desktop.com.br/api/api/fca/registros/${registroSelecionado.id}`, payload, {
-        headers: { Authorization: token },
+      await axios.put(`${API_BASE_URL}/api/fca/registros/${registroSelecionado.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       alert("FCA atualizado com sucesso!");

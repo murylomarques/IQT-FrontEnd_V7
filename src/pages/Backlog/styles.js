@@ -132,11 +132,17 @@ export const StatusTag = styled.span`
   color: ${({ status }) => {
     if (status === 'Aprovado') return '#28a745';
     if (status === 'Vencido' || status === 'Reprovado') return '#ae2e2a';
+    if (status === 'Aguardando resposta') return '#b42318';
+    if (status === 'Respondido (em análise)' || status === 'Respondido (em analise)') return '#b54708';
+    if (status === 'Sem pendência' || status === 'Sem pendencia') return '#15803d';
     return '#531110';
   }};
   background-color: ${({ status }) => {
     if (status === 'Aprovado') return 'rgba(40, 167, 69, 0.1)';
     if (status === 'Vencido' || status === 'Reprovado') return 'rgba(174, 46, 42, 0.1)';
+    if (status === 'Aguardando resposta') return 'rgba(180, 35, 24, 0.12)';
+    if (status === 'Respondido (em análise)' || status === 'Respondido (em analise)') return 'rgba(181, 71, 8, 0.12)';
+    if (status === 'Sem pendência' || status === 'Sem pendencia') return 'rgba(21, 128, 61, 0.12)';
     return 'rgba(83, 17, 16, 0.1)';
   }};
 `;

@@ -61,8 +61,44 @@ export default function VistoriaPDF({ dados }) {
 
   return (
     <Document>
-      <Page size="A4" style={{ padding: 20 }}>
-        <Text>Olá Mundo</Text>
+      <Page size="A4" style={styles.page}>
+
+        <Text style={styles.titulo}>Laudo de Vistoria</Text>
+
+        {/* DADOS PRINCIPAIS */}
+        <View style={styles.secao}>
+          <Text style={styles.label}>Protocolo:</Text>
+          <Text style={styles.valor}>{safe(protocolo)}</Text>
+
+          <Text style={styles.label}>Data:</Text>
+          <Text style={styles.valor}>{safe(data)}</Text>
+
+          <Text style={styles.label}>Técnico:</Text>
+          <Text style={styles.valor}>{safe(tecnico)}</Text>
+
+          <Text style={styles.label}>Empresa:</Text>
+          <Text style={styles.valor}>{safe(empresa)}</Text>
+
+          <Text style={styles.label}>Regional:</Text>
+          <Text style={styles.valor}>{safe(regional)}</Text>
+        </View>
+
+        {/* LISTA DE ITENS */}
+        {Array.isArray(itens) && itens.map((item, index) => (
+          <View key={index} style={styles.itemBox} wrap={false}>
+            <Text style={styles.label}>{safe(item.titulo)}</Text>
+            <Text style={styles.valor}>Status: {safe(item.status)}</Text>
+            <Text style={styles.valor}>Observação: {safe(item.observacao)}</Text>
+
+            {item.foto_url ? (
+              <Image src={item.foto_url} style={styles.img} />
+            ) : null}
+
+            {/* QUEBRA DE PÁGINA AUTOMÁTICA */}
+            <View style={styles.pageBreak}></View>
+          </View>
+        ))}
+
       </Page>
     </Document>
   );

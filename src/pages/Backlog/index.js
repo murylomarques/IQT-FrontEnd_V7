@@ -43,7 +43,7 @@ const TableSkeleton = () => (
   <tbody>
     {[...Array(5)].map((_, index) => (
       <tr key={index}>
-        {[...Array(12)].map((__, i) => (
+        {[...Array(13)].map((__, i) => (
           <td key={i}>
             <SkeletonText />
           </td>
@@ -120,9 +120,6 @@ const Backlog = () => {
   // LÓGICA DE FILTRO CORRIGIDA
   const filteredData = useMemo(() => {
     return tableData.filter(row => {
-      const displayStatus =
-        row.statusLaudo === 'Em Execução' && row.reprovada ? 'Reprovado' : row.statusLaudo;
-
       // Condição de status ajustada para os novos filtros
       const statusMatch = () => {
         const isConcluido = row.statusLaudo === 'Concluído' || row.statusLaudo === 'Aprovado';
@@ -306,6 +303,7 @@ const Backlog = () => {
                 <th>Data SLA</th>
                 <th>SLA</th>
                 <th>Status Laudo</th>
+                <th>Situação Correção</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -339,6 +337,9 @@ const Backlog = () => {
                           <StatusTag status={displayStatus}>{displayStatus}</StatusTag>
                         </td>
                         <td>
+                          <StatusTag status={row.correcaoStatus}>{row.correcaoStatus || 'Sem informação'}</StatusTag>
+                        </td>
+                        <td>
                           <ActionButtons>
                             <button title="Ver Detalhes">
                               <FiEye />
@@ -353,7 +354,7 @@ const Backlog = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="12" style={{ textAlign: 'center', padding: '16px' }}>
+                    <td colSpan="13" style={{ textAlign: 'center', padding: '16px' }}>
                       Nenhum resultado encontrado para os filtros aplicados.
                     </td>
                   </tr>

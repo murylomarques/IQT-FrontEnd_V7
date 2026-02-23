@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import VistoriaList from '../../components/VistoriaList';
+import SkeletonScreen from '../../components/SkeletonScreen';
 
 // Importa os estilos da própria pasta
 import { 
   FiscalContainer, 
   Title, 
-  LoadingSpinner, 
   ErrorMessage,
   CardsContainer,
   Card,
@@ -53,7 +53,7 @@ const Fiscal = () => {
   const vistoriasRealizadas = vistorias.filter(v => v.statusAgendamento === 'Concluído');
   const handleVistoriaClick = (id) => navigate(`/vistoria/${id}`);
 
-  if (isLoading) return <FiscalContainer><LoadingSpinner /></FiscalContainer>;
+  if (isLoading) return <FiscalContainer><SkeletonScreen variant="table" rows={6} /></FiscalContainer>;
   if (error) return <FiscalContainer><ErrorMessage>{error}</ErrorMessage></FiscalContainer>;
 
   return (

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Menu from '../../components/Menu';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
+import BacklogSkeleton from '../../components/BacklogSkeleton';
 import {
   AdminContainer, SectionCard, CardHeader, CardTitle, CardActions,
   PrimaryButton, SecondaryButton, Table, Thead, Tbody, Tr,
@@ -53,7 +54,7 @@ const Admin = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [modal, setModal] = useState({ type: null, data: null });
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
             const [usersData, empresasData, cargosData, regionaisData] = await Promise.all([
@@ -66,9 +67,9 @@ const Admin = () => {
             setRegionais(Array.isArray(regionaisData) ? regionaisData : []);
         } catch (error) { toast.error("Falha ao carregar dados administrativos."); } 
         finally { setIsLoading(false); }
-    };
+    }, [apiFetch]);
     
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
     const openModal = (type, data = null) => setModal({ type, data });
     const closeModal = () => setModal({ type: null, data: null });
@@ -97,7 +98,20 @@ const Admin = () => {
         }
     };
 
-    if (isLoading) { return <div>Carregando...</div>; }
+    if (isLoading) {
+        return (
+            <LayoutContainer>
+                <Menu isExpanded={isMenuExpanded} setIsExpanded={setIsMenuExpanded} />
+                <ContentArea isMenuExpanded={isMenuExpanded}>
+                    <Header>
+                        <HeaderTitle>Administração do Sistema</HeaderTitle>
+                        <UserProfile><span>{user?.nome}</span><button onClick={logout}>Sair</button></UserProfile>
+                    </Header>
+                    <BacklogSkeleton kpis={3} filters={6} rows={6} cols={6} />
+                </ContentArea>
+            </LayoutContainer>
+        );
+    }
 
     return (
         <LayoutContainer>

@@ -8,6 +8,7 @@ import { theme } from './styles/theme';
 
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
+import MonitorRoute from './routes/MonitorRoute';
 
 import VistoriaDetalhe from './pages/VistoriaDetalhe';
 // Importação das páginas
@@ -29,6 +30,10 @@ import DashboardAdm from './pages/DashboardAdm';
 import DashboardSupervisor from './pages/DashboardSupervisor';
 import DashboardCoordenador from './pages/DashboardCoordenador';
 import InserirFca from './pages/InserirFca';
+import Mensagens from './pages/Mensagens';
+import MonitorClima from './pages/MonitorClima';
+import MonitorCidadeDetalhe from './pages/MonitorClima/CidadeDetalhe';
+import GlobalNotifier from './components/GlobalNotifier';
 
 function App() {
   return (
@@ -36,6 +41,7 @@ function App() {
       <GlobalStyle />
       <Router>
         <AuthProvider>
+          <GlobalNotifier />
           <Routes>
             <Route path="/login" element={<Login />} />
 
@@ -130,6 +136,32 @@ function App() {
                 <ProtectedRoute allowedRoles={['admin']}>
                   <Admin />
                 </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/mensagens"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
+                  <Mensagens />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/monitor-clima"
+              element={
+                <MonitorRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
+                  <MonitorClima />
+                </MonitorRoute>
+              }
+            />
+            <Route
+              path="/monitor-clima/cidade/:nome"
+              element={
+                <MonitorRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
+                  <MonitorCidadeDetalhe />
+                </MonitorRoute>
               }
             />
 

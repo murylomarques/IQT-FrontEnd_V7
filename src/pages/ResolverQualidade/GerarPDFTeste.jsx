@@ -1,5 +1,7 @@
 import { jsPDF } from "jspdf";
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
 export default function GerarLaudoVistoria({ vistoria }) {
   const gerarPDF = async () => {
     const doc = new jsPDF();
@@ -64,7 +66,7 @@ export default function GerarLaudoVistoria({ vistoria }) {
       //        FOTO ORIGINAL
       // ==========================
       if (item.foto_path) {
-        const url = `https://iqt.desktop.com.br/api/storage/${item.foto_path}`;
+        const url = `${API_BASE_URL}/storage/${item.foto_path}`;
 
         try {
           const base64 = await carregarImagemBase64(url);
@@ -90,7 +92,7 @@ export default function GerarLaudoVistoria({ vistoria }) {
       //       FOTO CORREÇÃO
       // ==========================
       if (item.foto_correcao_path) {
-        const url = `https://iqt.desktop.com.br/api/storage/${item.foto_correcao_path}`;
+        const url = `${API_BASE_URL}/storage/${item.foto_correcao_path}`;
 
         try {
           const base64 = await carregarImagemBase64(url);

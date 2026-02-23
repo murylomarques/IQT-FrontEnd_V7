@@ -2,20 +2,20 @@
 /* Objetivo: classes únicas para não afetar outras telas */
 
 #adm2-dashboard {
-  --adm2-bg: #0f1117;
-  --adm2-surface: rgba(255, 255, 255, 0.06);
-  --adm2-surface-2: rgba(255, 255, 255, 0.09);
-  --adm2-border: rgba(255, 255, 255, 0.12);
-  --adm2-text: #e9e9f2;
-  --adm2-muted: rgba(233, 233, 242, 0.65);
-  --adm2-primary: #8a4fff;
-  --adm2-primary-2: #6a3add;
+  --adm2-bg: #f5f7fb;
+  --adm2-surface: #ffffff;
+  --adm2-surface-2: #f8fafc;
+  --adm2-border: #e2e8f0;
+  --adm2-text: #0f172a;
+  --adm2-muted: #64748b;
+  --adm2-primary: #1d4ed8;
+  --adm2-primary-2: #0ea5e9;
   --adm2-radius: 16px;
-  --adm2-font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Poppins", sans-serif;
+  --adm2-font: 'Manrope', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 
   min-height: 100vh;
-  background: radial-gradient(1200px 600px at 20% 0%, rgba(138, 79, 255, 0.20), transparent 55%),
-              radial-gradient(900px 450px at 90% 20%, rgba(255, 184, 0, 0.14), transparent 45%),
+  background: radial-gradient(1200px 600px at -10% -10%, rgba(59,130,246,0.10) 0%, transparent 60%),
+              radial-gradient(900px 450px at 110% -20%, rgba(14,165,233,0.12) 0%, transparent 55%),
               var(--adm2-bg);
   color: var(--adm2-text);
   font-family: var(--adm2-font);
@@ -32,7 +32,7 @@
   border: 1px solid var(--adm2-border);
   border-radius: var(--adm2-radius);
   padding: 18px 18px 12px;
-  box-shadow: 0 18px 60px rgba(0,0,0,0.25);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
 }
 
 #adm2-dashboard .adm2-headerTop {
@@ -70,7 +70,7 @@
   gap: 8px;
   border-radius: 999px;
   padding: 10px 14px;
-  background: rgba(255,255,255,0.05);
+  background: #f8fafc;
   border: 1px solid var(--adm2-border);
   color: var(--adm2-text);
   cursor: pointer;
@@ -83,7 +83,7 @@
 
 #adm2-dashboard .adm2-tab.is-active {
   background: rgba(138, 79, 255, 0.22);
-  border-color: rgba(138, 79, 255, 0.55);
+  border-color: rgba(29, 78, 216, 0.4);
 }
 
 /* Content */
@@ -148,9 +148,9 @@
 #adm2-dashboard .adm2-field input,
 #adm2-dashboard .adm2-field select {
   width: 100%;
-  background: rgba(15, 17, 23, 0.55);
+  background: #ffffff;
   color: var(--adm2-text);
-  border: 1px solid rgba(255,255,255,0.14);
+  border: 1px solid var(--adm2-border);
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
@@ -168,8 +168,8 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--adm2-border);
+  background: var(--adm2-surface);
   color: var(--adm2-text);
   border-radius: 12px;
   padding: 10px 12px;
@@ -180,20 +180,20 @@
   white-space: nowrap;
 }
 
-#adm2-dashboard .adm2-btn:hover { background: rgba(255,255,255,0.09); }
+#adm2-dashboard .adm2-btn:hover { background: var(--adm2-surface-2); }
 #adm2-dashboard .adm2-btn:active { transform: translateY(1px); }
 
 #adm2-dashboard .adm2-btnPrimary {
-  background: rgba(138, 79, 255, 0.26);
-  border-color: rgba(138, 79, 255, 0.65);
+  background: rgba(29, 78, 216, 0.12);
+  border-color: rgba(29, 78, 216, 0.4);
 }
-#adm2-dashboard .adm2-btnPrimary:hover { background: rgba(138, 79, 255, 0.34); }
+#adm2-dashboard .adm2-btnPrimary:hover { background: rgba(29, 78, 216, 0.18); }
 
 #adm2-dashboard .adm2-btnGhost {
   background: transparent;
   border-color: rgba(255,255,255,0.18);
 }
-#adm2-dashboard .adm2-btnGhost:hover { background: rgba(255,255,255,0.06); }
+#adm2-dashboard .adm2-btnGhost:hover { background: var(--adm2-surface); }
 
 /* KPIs */
 #adm2-dashboard .adm2-kpis {
@@ -212,6 +212,87 @@
   padding: 14px 14px;
 }
 
+#adm2-dashboard .adm2-cardTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+#adm2-dashboard .adm2-cardBadge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--adm2-border);
+  background: #f8fafc;
+  color: var(--adm2-text);
+}
+
+#adm2-dashboard .adm2-cardBadge--success {
+  background: rgba(34,197,94,0.15);
+  color: #15803d;
+  border-color: rgba(34,197,94,0.35);
+}
+#adm2-dashboard .adm2-cardBadge--warning {
+  background: rgba(245,158,11,0.16);
+  color: #b45309;
+  border-color: rgba(245,158,11,0.35);
+}
+#adm2-dashboard .adm2-cardBadge--danger {
+  background: rgba(239,68,68,0.16);
+  color: #b91c1c;
+  border-color: rgba(239,68,68,0.35);
+}
+#adm2-dashboard .adm2-cardBadge--info {
+  background: rgba(59,130,246,0.16);
+  color: #1d4ed8;
+  border-color: rgba(59,130,246,0.35);
+}
+#adm2-dashboard .adm2-cardBadge--neutral {
+  background: rgba(100,116,139,0.14);
+  color: #334155;
+  border-color: rgba(100,116,139,0.3);
+}
+
+#adm2-dashboard .adm2-filterChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#adm2-dashboard .adm2-chipLabel {
+  color: var(--adm2-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+#adm2-dashboard .adm2-chip {
+  border: 1px solid var(--adm2-border);
+  background: #ffffff;
+  color: var(--adm2-text);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+#adm2-dashboard .adm2-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+  border-color: rgba(29, 78, 216, 0.35);
+}
+
+#adm2-dashboard .adm2-chip--clear {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+}
+
 #adm2-dashboard .adm2-cardIcon {
   width: 42px;
   height: 42px;
@@ -219,6 +300,12 @@
   place-items: center;
   border-radius: 14px;
   font-size: 18px;
+}
+
+#adm2-dashboard .adm2-cardInfo {
+  display: grid;
+  gap: 4px;
+  flex: 1;
 }
 
 #adm2-dashboard .adm2-cardValue {
@@ -259,8 +346,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(15, 17, 23, 0.55);
-  border: 1px solid rgba(255,255,255,0.14);
+  background: #ffffff;
+  border: 1px solid var(--adm2-border);
   border-radius: 999px;
   padding: 10px 12px;
 }
@@ -283,7 +370,7 @@
   overflow: auto;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(15, 17, 23, 0.35);
+  background: #ffffff;
 }
 
 #adm2-dashboard .adm2-table {
@@ -302,16 +389,16 @@
 #adm2-dashboard .adm2-table th {
   position: sticky;
   top: 0;
-  background: rgba(17, 20, 28, 0.95);
+  background: #f1f5f9;
   backdrop-filter: blur(8px);
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.7px;
-  color: rgba(233, 233, 242, 0.75);
+  color: #475569;
 }
 
 #adm2-dashboard .adm2-table tbody tr:hover {
-  background: rgba(255,255,255,0.04);
+  background: #f8fafc;
 }
 
 #adm2-dashboard .adm2-empty {
@@ -328,8 +415,8 @@
   border-radius: 999px;
   font-weight: 800;
   font-size: 0.78rem;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--adm2-border);
+  background: var(--adm2-surface);
 }
 
 #adm2-dashboard .adm2-status--pendente { border-color: rgba(243, 156, 18, 0.55); background: rgba(243,156,18,0.16); }
@@ -352,7 +439,7 @@
 #adm2-dashboard .adm2-modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.72);
+  background: rgba(15, 23, 42, 0.4);
   display: grid;
   place-items: center;
   z-index: 9999;
@@ -362,8 +449,8 @@
 #adm2-dashboard .adm2-modal {
   width: 100%;
   max-width: 520px;
-  background: rgba(20, 22, 30, 0.96);
-  border: 1px solid rgba(255,255,255,0.14);
+  background: #ffffff;
+  border: 1px solid var(--adm2-border);
   border-radius: 18px;
   box-shadow: 0 24px 80px rgba(0,0,0,0.45);
   overflow: hidden;
@@ -387,8 +474,8 @@
 #adm2-dashboard .adm2-modalTitle { margin: 0; font-size: 1.05rem; }
 
 #adm2-dashboard .adm2-iconBtn {
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--adm2-border);
+  background: var(--adm2-surface);
   color: var(--adm2-text);
   border-radius: 12px;
   width: 40px;
@@ -450,4 +537,39 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+
+/* Premium micro-interactions */
+#adm2-dashboard .adm2-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+#adm2-dashboard .adm2-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+#adm2-dashboard .adm2-btn {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+#adm2-dashboard .adm2-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+}
+#adm2-dashboard .adm2-tableWrap {
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+#adm2-dashboard .adm2-table tbody tr {
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+#adm2-dashboard .adm2-table tbody tr:hover {
+  background: #f8fafc;
+}
+#adm2-dashboard .adm2-status {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+}
+#adm2-dashboard .adm2-tab {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+#adm2-dashboard .adm2-tab.is-active {
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.18);
 }

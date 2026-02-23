@@ -4,7 +4,7 @@ import styled from 'styled-components';
 export const LayoutContainer = styled.div`
   display: flex;
   min-height: 100vh;
-  background-color: #f4f7fa; // Adicionado para consistência de fundo
+  background-color: var(--bg-0); // Adicionado para consistência de fundo
 `;
 
 export const ContentArea = styled.main`
@@ -33,10 +33,61 @@ export const Header = styled.header`
 `;
 
 export const HeaderTitle = styled.h1`
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #35302d;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--ink-0);
   letter-spacing: -0.5px;
+`;
+
+export const HeaderSubTitle = styled.p`
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 1rem;
+`;
+
+export const HeaderMeta = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+export const HeaderActions = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+export const ActionButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-0);
+  background: #fff;
+  color: var(--ink-1);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent-1);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  }
+`;
+
+export const HeaderBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(29, 78, 216, 0.12);
+  color: var(--accent-0);
+  font-size: 0.8rem;
+  font-weight: 800;
 `;
 
 export const UserProfile = styled.div`
@@ -44,12 +95,12 @@ export const UserProfile = styled.div`
   align-items: center;
   gap: 12px;
   font-weight: 500;
-  color: #35302d;
+  color: var(--ink-0);
 
   button {
     background: transparent;
     border: none;
-    color: #ae2e2a;
+    color: var(--accent-2);
     cursor: pointer;
     font-size: 0.9rem;
     &:hover { text-decoration: underline; }
@@ -87,26 +138,40 @@ export const DashboardGrid = styled.div`
 `;
 
 export const Card = styled.div`
-  background-color: #ffffff;
+  background-color: var(--bg-1);
   padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border-0);
   grid-area: ${({ area }) => area};
   display: flex;
   flex-direction: column;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  }
+`;
+
+export const CardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 `;
 
 export const KpiCard = styled(Card)`
   h3 {
     font-size: 0.9rem;
-    color: #531110;
+    color: var(--ink-2);
     margin: 0 0 8px 0;
     font-weight: 500;
   }
   p {
     font-size: 2rem;
     font-weight: 700;
-    color: #35302d;
+    color: var(--ink-0);
     margin: 0;
   }
 `;
@@ -118,7 +183,7 @@ export const StatChange = styled.span`
   display: flex;
   align-items: center;
   gap: 4px;
-  color: ${({ type }) => (type === 'positive' ? '#28a745' : '#ae2e2a')};
+  color: ${({ type }) => (type === 'positive' ? 'var(--success)' : 'var(--danger)')};
 `;
 
 export const ChartContainer = styled(Card)``;
@@ -155,24 +220,24 @@ export const DevelopmentWarning = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.75);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  border-radius: 16px; 
+  border-radius: var(--radius-2); 
   z-index: 10;
   backdrop-filter: blur(2px);
 
   svg {
     font-size: 2.5rem;
-    color: #f4ba44;
+    color: var(--warning);
   }
 
   p {
     font-weight: 600;
-    color: #531110;
+    color: var(--ink-2);
   }
 `;
 

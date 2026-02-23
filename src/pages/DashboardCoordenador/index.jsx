@@ -18,6 +18,9 @@ import {
 } from './styles';
 import DashboardCard from '../../components/DashboardCard/index'; // Reutilizando o mesmo card
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
+
 const DashboardCoordenador = () => {
   // --- ESTADOS ---
   const [allTasks, setAllTasks] = useState([]); // Guarda TODOS os registros da API
@@ -40,13 +43,13 @@ const DashboardCoordenador = () => {
 
       if (!token) {
         toast.error('Token não encontrado.');
-        navigate('/');
+        navigate('/login/FCA');
         return;
       }
 
       // Assumindo que a API retorna os dados de todos os supervisores para um coordenador logado
-      const response = await axios.get('https://iqt.desktop.com.br/api/api/fca/registros/coordenador', {
-        headers: { Authorization: token },
+      const response = await axios.get(`${API_BASE_URL}/api/fca/registros/coordenador`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       setAllTasks(response.data);

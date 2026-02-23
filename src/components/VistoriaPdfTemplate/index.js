@@ -1,6 +1,8 @@
 import React from 'react';
 import './styles.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
 const VistoriaPdfTemplate = React.forwardRef(({ vistoriaData }, ref) => {
   if (!vistoriaData) return null;
 
@@ -44,7 +46,7 @@ const VistoriaPdfTemplate = React.forwardRef(({ vistoriaData }, ref) => {
               {/* Usamos a URL dinâmica E adicionamos crossOrigin="anonymous" */}
               {item.foto_path && (
                 <img 
-                  src={`https://iqt.desktop.com.br/api/storage/${item.foto_path}`} 
+                  src={`${API_BASE_URL}/storage/${item.foto_path}`} 
                   alt={`Foto do item ${item.item_key}`} 
                   className="pdf-item-image"
                   crossOrigin="anonymous" 

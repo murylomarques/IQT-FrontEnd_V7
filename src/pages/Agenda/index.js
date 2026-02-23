@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { Task } from '../../components/Task'; 
 import { TaskModal } from './TaskModal';
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
+import BacklogSkeleton from '../../components/BacklogSkeleton';
 import {
     ControlPanel, GanttContainer, GanttGrid, ResourceList, ResourceHeader,
     ResourceItem, TimelineWrapper, TimelineHeader, TimelineRow,
@@ -26,7 +27,6 @@ const Agenda = () => {
     const [scheduleData, setScheduleData] = useState([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedTask, setSelectedTask] = useState(null);
-    const [selectedvalor, setSelectedvalor] = useState(null);
 
     const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2,'0')}:00`);
 
@@ -178,7 +178,9 @@ useEffect(() => {
                     </UserProfile>
                 </Header>
                 
-                {isLoading ? (<div>Carregando...</div>) : (
+                {isLoading ? (
+                    <BacklogSkeleton kpis={3} filters={4} rows={6} cols={8} />
+                ) : (
                     <DndContext onDragEnd={handleDragEnd}>
                         <ControlPanel>
                             <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />

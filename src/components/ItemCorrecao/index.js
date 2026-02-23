@@ -6,6 +6,8 @@ import {
     FileInputLabel, SubmitButton, ApproveButton, ReproveButton
 } from './styles';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
 const ItemCorrecao = ({ item, onItemUpdate, isSubmitting }) => {
     const { user } = useAuth();
     const [fotoCorrecao, setFotoCorrecao] = useState(null);
@@ -41,7 +43,7 @@ const ItemCorrecao = ({ item, onItemUpdate, isSubmitting }) => {
         onItemUpdate(item.id, { status, action: 'avaliar' });
     };
 
-    const baseURL = 'https://iqt.desktop.com.br/api/storage/';
+    const baseURL = `${API_BASE_URL}/storage/`;
 
     return (
         <ItemCard>

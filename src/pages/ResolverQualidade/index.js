@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
@@ -36,7 +36,7 @@ const ResolverQualidade = () => {
     const [vistoria, setVistoria] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const fetchVistoriaDetails = async () => {
+    const fetchVistoriaDetails = useCallback(async () => {
         setIsLoading(true);
         try {
             const data = await apiFetch(`/api/vistorias/${id}`);
@@ -55,11 +55,11 @@ const ResolverQualidade = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [apiFetch, id, navigate]);
 
     useEffect(() => {
         fetchVistoriaDetails();
-    }, [id]);
+    }, [fetchVistoriaDetails]);
 
     const handleItemUpdate = async (itemId, data) => {
         setIsSubmitting(true);

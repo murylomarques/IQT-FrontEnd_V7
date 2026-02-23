@@ -1,5 +1,7 @@
 import { jsPDF } from "jspdf";
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
 export default function GerarLaudoVistoria({ vistoria }) {
   const gerarPDF = async () => {
     const doc = new jsPDF();
@@ -65,7 +67,7 @@ export default function GerarLaudoVistoria({ vistoria }) {
       if (item.foto_path) {
         try {
           const image = await carregarImagemBase64(
-            `https://iqt.desktop.com.br/storage/${item.foto_path}`
+            `${API_BASE_URL}/storage/${item.foto_path}`
           );
 
           doc.addImage(image, "JPEG", 14, y, 60, 60);

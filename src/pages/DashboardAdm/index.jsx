@@ -20,41 +20,49 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "./styles.css";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
 
 // --- CORES OFICIAIS DESKTOP INTERNET ---
 const DESKTOP_ORANGE = [255, 184, 0]; // #FFB800
 const DESKTOP_DARK_BLUE = [0, 47, 95]; // #002F5F
 
 // --- COMPONENTE DE CARD ---
-function DashboardCard({ title, value, icon, color }) {
+function DashboardCard({ title, value, icon, color, badge, badgeTone = "info" }) {
   const cardStyle = { borderLeft: `5px solid ${color}` };
   const iconStyle = { backgroundColor: `${color}20`, color: color };
 
   return (
-    <div className="dashboard-card" style={cardStyle}>
-      <div className="card-icon" style={iconStyle}>
+    <div className="adm2-card" style={cardStyle}>
+      <div className="adm2-cardIcon" style={iconStyle}>
         {icon}
       </div>
-      <div className="card-info">
-        <h3>{value}</h3>
-        <p>{title}</p>
+      <div className="adm2-cardInfo">
+        <div className="adm2-cardTop">
+          <div className="adm2-cardValue">{value}</div>
+          {badge ? (
+            <span className={`adm2-cardBadge adm2-cardBadge--${badgeTone}`}>{badge}</span>
+          ) : null}
+        </div>
+        <div className="adm2-cardTitle">{title}</div>
       </div>
     </div>
   );
 }
 
 // --- HELPERS: CSV ---
-function toCSV(rows, headers) {
+function toCSV(rows, headers, sep = ",") {
   const escape = (val) => {
     if (val === null || val === undefined) return "";
     const s = String(val);
     const escaped = s.replace(/"/g, '""');
-    if (/[",\n]/.test(escaped)) return `"${escaped}"`;
+    const needsWrap = escaped.includes(sep) || /["\n]/.test(escaped);
+    if (needsWrap) return `"${escaped}"`;
     return escaped;
   };
 
-  const headerLine = headers.map((h) => escape(h.label)).join(",");
-  const lines = rows.map((r) => headers.map((h) => escape(r?.[h.key])).join(","));
+  const headerLine = headers.map((h) => escape(h.label)).join(sep);
+  const lines = rows.map((r) => headers.map((h) => escape(r?.[h.key])).join(sep));
   return [headerLine, ...lines].join("\n");
 }
 
@@ -103,7 +111,7 @@ function DashboardAdm() {
   // --- MODAL: EDITAR SUPERVISOR DO LAUDO ---
   const [isTaskEditModalOpen, setIsTaskEditModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
-  const [newSupervisorName, setNewSupervisorName] = useState("todos");
+  const [newSupervisorId, setNewSupervisorId] = useState("todos");
 
   // --- MODAL: CADASTRAR USUÁRIO ---
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
@@ -160,17 +168,17 @@ function DashboardAdm() {
       const token = localStorage.getItem("FCA-token");
       if (!token) {
         toast.error("Token não encontrado. Faça login novamente.");
-        navigate("/");
+        navigate("/login/FCA");
         return;
       }
 
-      const headers = { Authorization: token };
+      const headers = { Authorization: `Bearer ${token}` };
       const nome = localStorage.getItem("FCA-nome");
       if (nome) setUserName(nome);
 
       const [tasks, users] = await Promise.all([
-        adm2FetchAllPages("https://iqt.desktop.com.br/api/api/fca/registros/all", headers),
-        adm2FetchAllPages("https://iqt.desktop.com.br/api/api/fca/users", headers),
+        adm2FetchAllPages(`${API_BASE_URL}/api/fca/registros/all`, headers),
+        adm2FetchAllPages(`${API_BASE_URL}/api/fca/users`, headers),
       ]);
 
       setAllTasks(tasks || []);
@@ -195,17 +203,48 @@ function DashboardAdm() {
       .toLowerCase();
 
   const coordinatorsList = useMemo(() => {
-    const names = [...new Set(allTasks.map((task) => task.responsavel).filter(Boolean))];
-    return names
-      .map((n) => String(n).trim())
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [allTasks]);
+    return allUsers
+      .filter((u) => (u.cargo || "").toLowerCase() === "coordenador")
+      .map((u) => ({ id: u.id, nome: u.nome }))
+      .filter((u) => u.id && u.nome)
+      .sort((a, b) => String(a.nome).localeCompare(String(b.nome), "pt-BR"));
+  }, [allUsers]);
 
   const supervisorsList = useMemo(() => {
-    const names = [...new Set(allTasks.map((task) => task.nome_supervisor).filter(Boolean))];
-    return names.sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
-  }, [allTasks]);
+    return allUsers
+      .filter((u) => (u.cargo || "").toLowerCase() === "supervisor")
+      .map((u) => ({ id: u.id, nome: u.nome }))
+      .filter((u) => u.id && u.nome)
+      .sort((a, b) => String(a.nome).localeCompare(String(b.nome), "pt-BR"));
+  }, [allUsers]);
+
+  const supervisorNameById = useMemo(() => {
+    const map = new Map();
+    supervisorsList.forEach((s) => map.set(String(s.id), s.nome));
+    return map;
+  }, [supervisorsList]);
+
+  const coordinatorNameById = useMemo(() => {
+    const map = new Map();
+    coordinatorsList.forEach((c) => map.set(String(c.id), c.nome));
+    return map;
+  }, [coordinatorsList]);
+
+  const userNameById = useMemo(() => {
+    const map = new Map();
+    allUsers.forEach((u) => {
+      if (u?.id) map.set(String(u.id), u.nome || "");
+    });
+    return map;
+  }, [allUsers]);
+
+  const isSupervisorCargo = (cargo) => adm2NormalizeText(cargo) === "supervisor";
+
+  const hierarchyOptionsForCargo = (cargo) =>
+    isSupervisorCargo(cargo) ? coordinatorsList : supervisorsList;
+
+  const hierarchyLabelForCargo = (cargo) =>
+    isSupervisorCargo(cargo) ? "Hierarquia (Coordenador)" : "Hierarquia (Supervisor)";
 
   const filteredTasks = useMemo(() => {
     return allTasks.filter((task) => {
@@ -218,11 +257,16 @@ function DashboardAdm() {
 
       if (
         filters.coordenador !== "todos" &&
-        adm2NormalizeText(task.responsavel) !== adm2NormalizeText(filters.coordenador)
+        String(task.id_coordenador || "") !== String(filters.coordenador)
+      ) {
+        return false;
+      }
+
+      if (
+        filters.supervisor !== "todos" &&
+        String(task.id_supervisor || "") !== String(filters.supervisor)
       )
         return false;
-
-      if (filters.supervisor !== "todos" && task.nome_supervisor !== filters.supervisor) return false;
 
       return true;
     });
@@ -287,6 +331,57 @@ function DashboardAdm() {
     [allUsers]
   );
 
+  const formatMonthYear = (value) => {
+    if (!value) return "";
+    const [year, month] = value.split("-");
+    if (!year || !month) return value;
+    return `${month}/${year}`;
+  };
+
+  const formatPercent = (value, total) => {
+    if (!total) return "0%";
+    return `${Math.round((value / total) * 100)}%`;
+  };
+
+  const filterChips = [
+    filters.monthYear
+      ? { key: "monthYear", label: `Mês/Ano: ${formatMonthYear(filters.monthYear)}` }
+      : null,
+    filters.status !== "todos" ? { key: "status", label: `Status: ${filters.status}` } : null,
+    filters.coordenador !== "todos"
+      ? {
+          key: "coordenador",
+          label: `Coord.: ${coordinatorNameById.get(String(filters.coordenador)) || "N/A"}`,
+        }
+      : null,
+    filters.supervisor !== "todos"
+      ? {
+          key: "supervisor",
+          label: `Supervisor: ${supervisorNameById.get(String(filters.supervisor)) || "N/A"}`,
+        }
+      : null,
+  ].filter(Boolean);
+
+  const clearFilter = (key) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]:
+        key === "status" || key === "coordenador" || key === "supervisor"
+          ? "todos"
+          : "",
+    }));
+  };
+
+  const clearAllFilters = () => {
+    setFilters((prev) => ({
+      ...prev,
+      monthYear: "",
+      status: "todos",
+      coordenador: "todos",
+      supervisor: "todos",
+    }));
+  };
+
   // --- FUNÇÕES DE MANIPULAÇÃO ---
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -332,7 +427,7 @@ function DashboardAdm() {
     // ✅ NOVO: hierarquia
     const oldHier = (editingUser.nivel_hierarquia ?? "").toString();
     const newHier = (newHierarquia ?? "").toString();
-    if (newHier !== oldHier) payload.nivel_hierarquia = newHierarquia;
+    if (newHier !== oldHier) payload.nivel_hierarquia = newHierarquia || null;
 
     if (Object.keys(payload).length === 0) {
       toast.info("Nenhuma alteração feita.");
@@ -343,9 +438,9 @@ function DashboardAdm() {
     try {
       const token = localStorage.getItem("FCA-token");
       const response = await axios.put(
-        `https://iqt.desktop.com.br/api/api/fca/users/${editingUser.id}`,
+        `${API_BASE_URL}/api/fca/users/${editingUser.id}`,
         payload,
-        { headers: { Authorization: token } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const updated = response.data?.user || response.data;
@@ -364,14 +459,14 @@ function DashboardAdm() {
   // --- LAUDOS: EDITAR SUPERVISOR ---
   const openTaskEditModal = (task) => {
     setEditingTask(task);
-    setNewSupervisorName(task?.nome_supervisor || "todos");
+    setNewSupervisorId(task?.id_supervisor ? String(task.id_supervisor) : "todos");
     setIsTaskEditModalOpen(true);
   };
 
   const closeTaskEditModal = () => {
     setIsTaskEditModalOpen(false);
     setEditingTask(null);
-    setNewSupervisorName("todos");
+    setNewSupervisorId("todos");
   };
 
   const handleUpdateTaskSupervisor = async () => {
@@ -381,22 +476,36 @@ function DashboardAdm() {
       const token = localStorage.getItem("FCA-token");
       if (!token) {
         toast.error("Token não encontrado. Faça login novamente.");
-        navigate("/");
+        navigate("/login/FCA");
         return;
       }
 
-      const headers = { Authorization: token };
-      const payload = { nome_supervisor: newSupervisorName };
+      const headers = { Authorization: `Bearer ${token}` };
+      const payload = { id_supervisor: newSupervisorId };
 
       await axios.put(
-        `https://iqt.desktop.com.br/api/api/fca/registros/${editingTask.id}`,
+        `${API_BASE_URL}/api/fca/registros/${editingTask.id}`,
         payload,
         { headers }
       );
 
+      const supervisorNome = supervisorNameById.get(String(newSupervisorId)) || "N/A";
+      const supervisorUser = allUsers.find((u) => String(u.id) === String(newSupervisorId));
+      const coordinatorId = supervisorUser?.nivel_hierarquia ?? null;
+      const coordinatorNome = coordinatorId
+        ? userNameById.get(String(coordinatorId)) || "N/A"
+        : "N/A";
       setAllTasks((prev) =>
         prev.map((t) =>
-          t.id === editingTask.id ? { ...t, nome_supervisor: newSupervisorName } : t
+          t.id === editingTask.id
+            ? {
+                ...t,
+                id_supervisor: newSupervisorId,
+                nome_supervisor: supervisorNome,
+                id_coordenador: coordinatorId,
+                nome_coordenador: coordinatorNome,
+              }
+            : t
         )
       );
 
@@ -427,11 +536,11 @@ function DashboardAdm() {
       const token = localStorage.getItem("FCA-token");
       if (!token) {
         toast.error("Token não encontrado. Faça login novamente.");
-        navigate("/");
+        navigate("/login/FCA");
         return;
       }
 
-      const headers = { Authorization: token };
+      const headers = { Authorization: `Bearer ${token}` };
 
       const payload = {
         nome: createNome,
@@ -439,10 +548,10 @@ function DashboardAdm() {
         email: createEmail,
         cargo: createCargo,
         password: createPassword,
-        nivel_hierarquia: createHierarquia, // ✅ NOVO
+        nivel_hierarquia: createHierarquia || null, // ✅ NOVO
       };
 
-      const resp = await axios.post("https://iqt.desktop.com.br/api/api/fca/users", payload, {
+      const resp = await axios.post(`${API_BASE_URL}/api/fca/users`, payload, {
         headers,
       });
 
@@ -494,6 +603,7 @@ function DashboardAdm() {
     const generalInfo = [
       ["ID do Registro", task.id],
       ["Supervisor Responsável", task.nome_supervisor],
+      ["Coordenador Responsável", task.nome_coordenador || "N/A"],
       ["Técnico Avaliado", task.nome_tecnico],
       ["Status Atual", task.status],
       ["Responsável pela Ação", task.responsavel || "A definir"],
@@ -575,24 +685,26 @@ function DashboardAdm() {
     const headers = [
       { key: "id", label: "ID" },
       { key: "nome", label: "Nome" },
-      { key: "usuario", label: "Usuario" },
+      { key: "usuario", label: "Usuário" },
       { key: "email", label: "Email" },
       { key: "cargo", label: "Cargo" },
       { key: "nivel_hierarquia", label: "Hierarquia" }, // ✅ NOVO
       { key: "created_at", label: "Criado em" },
     ];
 
-    const rows = paginatedUsers.map((u) => ({
+    const rows = filteredUsers.map((u) => ({
       id: u.id,
       nome: u.nome,
       usuario: u.usuario || "",
       email: u.email || "",
       cargo: u.cargo || "",
-      nivel_hierarquia: u.nivel_hierarquia ?? "", // ✅ NOVO
+      nivel_hierarquia: u.nivel_hierarquia
+        ? userNameById.get(String(u.nivel_hierarquia)) || ""
+        : "",
       created_at: u.created_at ? new Date(u.created_at).toLocaleString() : "",
     }));
 
-    const csv = toCSV(rows, headers);
+    const csv = "\uFEFF" + toCSV(rows, headers, ";");
     downloadTextFile(
       `usuarios_fca_${new Date().toISOString().slice(0, 10)}.csv`,
       csv,
@@ -604,6 +716,7 @@ function DashboardAdm() {
   const exportTasksCSV = () => {
     const headers = [
       { key: "id", label: "ID" },
+      { key: "nome_coordenador", label: "Coordenador" },
       { key: "nome_supervisor", label: "Supervisor" },
       { key: "nome_tecnico", label: "Tecnico" },
       { key: "status", label: "Status" },
@@ -615,8 +728,9 @@ function DashboardAdm() {
       { key: "acao", label: "Acao" },
     ];
 
-    const rows = paginatedTasks.map((t) => ({
+    const rows = filteredTasks.map((t) => ({
       id: t.id,
+      nome_coordenador: t.nome_coordenador || "",
       nome_supervisor: t.nome_supervisor || "",
       nome_tecnico: t.nome_tecnico || "",
       status: t.status || "",
@@ -628,7 +742,7 @@ function DashboardAdm() {
       acao: t.acao || "",
     }));
 
-    const csv = toCSV(rows, headers);
+    const csv = "\uFEFF" + toCSV(rows, headers, ";");
     downloadTextFile(
       `plano_acao_fca_${new Date().toISOString().slice(0, 10)}.csv`,
       csv,
@@ -674,8 +788,13 @@ function DashboardAdm() {
       ["Vencidas", String(taskStats.naoExecutado)],
       ["Mês/Ano", filters.monthYear || "Todos"],
       ["Status", filters.status || "Todos"],
-      ["Supervisor", filters.supervisor || "Todos"],
-      ["Coordenador", filters.coordenador || "Todos"],
+      ["Supervisor", filters.supervisor !== "todos" ? supervisorNameById.get(String(filters.supervisor)) || "N/A" : "Todos"],
+      [
+        "Coordenador",
+        filters.coordenador !== "todos"
+          ? coordinatorNameById.get(String(filters.coordenador)) || "N/A"
+          : "Todos",
+      ],
     ];
 
     autoTable(doc, {
@@ -694,9 +813,10 @@ function DashboardAdm() {
 
     autoTable(doc, {
       startY,
-      head: [["ID", "Supervisor", "Técnico", "Status", "Início", "Fim"]],
-      body: paginatedTasks.map((t) => [
+      head: [["ID", "Coordenador", "Supervisor", "Técnico", "Status", "Início", "Fim"]],
+      body: filteredTasks.map((t) => [
         t.id,
+        t.nome_coordenador || "-",
         t.nome_supervisor || "-",
         t.nome_tecnico || "-",
         t.status || "-",
@@ -813,9 +933,9 @@ function DashboardAdm() {
                     onChange={handleFilterChange}
                   >
                     <option value="todos">Todos</option>
-                    {coordinatorsList.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
+                    {coordinatorsList.map((c) => (
+                      <option key={c.id} value={String(c.id)}>
+                        {c.nome}
                       </option>
                     ))}
                   </select>
@@ -830,28 +950,78 @@ function DashboardAdm() {
                     onChange={handleFilterChange}
                   >
                     <option value="todos">Todos</option>
-                    {supervisorsList.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
+                    {supervisorsList.map((s) => (
+                      <option key={s.id} value={String(s.id)}>
+                        {s.nome}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
+
+              {filterChips.length > 0 && (
+                <div className="adm2-filterChips" aria-label="Filtros ativos">
+                  <span className="adm2-chipLabel">Filtros ativos:</span>
+                  {filterChips.map((chip) => (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      className="adm2-chip"
+                      onClick={() => clearFilter(chip.key)}
+                      title="Remover filtro"
+                    >
+                      {chip.label} <span aria-hidden="true">×</span>
+                    </button>
+                  ))}
+                  <button type="button" className="adm2-chip adm2-chip--clear" onClick={clearAllFilters}>
+                    Limpar todos
+                  </button>
+                </div>
+              )}
             </section>
 
             {/* KPIs */}
             <section className="adm2-kpis" id="adm2-kpis">
-              <DashboardCard title="Total Tarefas" value={taskStats.total} icon={<FaListUl />} color="#1abc9c" />
+              <DashboardCard
+                title="Total Tarefas"
+                value={taskStats.total}
+                icon={<FaListUl />}
+                color="#1abc9c"
+                badge="Base"
+                badgeTone="neutral"
+              />
               <DashboardCard
                 title="Pendentes"
                 value={taskStats.pendentes}
                 icon={<FaExclamationTriangle />}
                 color="#f39c12"
+                badge={`${formatPercent(taskStats.pendentes, taskStats.total)} do total`}
+                badgeTone="warning"
               />
-              <DashboardCard title="Em Execução" value={taskStats.emExecucao} icon={<FaPlay />} color="#3498db" />
-              <DashboardCard title="Finalizadas" value={taskStats.finalizado} icon={<FaCheckCircle />} color="#2ecc71" />
-              <DashboardCard title="Vencidas" value={taskStats.naoExecutado} icon={<FaTimesCircle />} color="#e74c3c" />
+              <DashboardCard
+                title="Em Execução"
+                value={taskStats.emExecucao}
+                icon={<FaPlay />}
+                color="#3498db"
+                badge={`${formatPercent(taskStats.emExecucao, taskStats.total)} do total`}
+                badgeTone="info"
+              />
+              <DashboardCard
+                title="Finalizadas"
+                value={taskStats.finalizado}
+                icon={<FaCheckCircle />}
+                color="#2ecc71"
+                badge={`${formatPercent(taskStats.finalizado, taskStats.total)} do total`}
+                badgeTone="success"
+              />
+              <DashboardCard
+                title="Vencidas"
+                value={taskStats.naoExecutado}
+                icon={<FaTimesCircle />}
+                color="#e74c3c"
+                badge={`${formatPercent(taskStats.naoExecutado, taskStats.total)} do total`}
+                badgeTone="danger"
+              />
             </section>
 
             {/* Plano de Ação (Tabela) */}
@@ -877,6 +1047,7 @@ function DashboardAdm() {
                 <table className="adm2-table" id="adm2-table-tasks">
                   <thead>
                     <tr>
+                      <th>Coordenador</th>
                       <th>Supervisor</th>
                       <th>Técnico</th>
                       <th>Status</th>
@@ -890,6 +1061,7 @@ function DashboardAdm() {
                     {filteredTasks.length > 0 ? (
                       paginatedTasks.map((task) => (
                         <tr key={task.id} data-task-id={task.id}>
+                          <td>{task.nome_coordenador || "-"}</td>
                           <td>{task.nome_supervisor}</td>
                           <td>{task.nome_tecnico}</td>
                           <td>
@@ -940,7 +1112,7 @@ function DashboardAdm() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="6" className="adm2-empty">
+                        <td colSpan="7" className="adm2-empty">
                           Nenhum registro encontrado.
                         </td>
                       </tr>
@@ -991,10 +1163,38 @@ function DashboardAdm() {
               </div>
 
               <div className="adm2-kpis">
-                <DashboardCard title="Total Usuários" value={userStats.total} icon={<FaUsers />} color="#8A4FFF" />
-                <DashboardCard title="Administradores" value={userStats.admins} icon={<FaCheckCircle />} color="#2ecc71" />
-                <DashboardCard title="Coordenadores" value={userStats.coordinators} icon={<FaExclamationTriangle />} color="#f39c12" />
-                <DashboardCard title="Supervisores" value={userStats.supervisors} icon={<FaPlay />} color="#3498db" />
+                <DashboardCard
+                  title="Total Usuários"
+                  value={userStats.total}
+                  icon={<FaUsers />}
+                  color="#8A4FFF"
+                  badge="Base"
+                  badgeTone="neutral"
+                />
+                <DashboardCard
+                  title="Administradores"
+                  value={userStats.admins}
+                  icon={<FaCheckCircle />}
+                  color="#2ecc71"
+                  badge={`${formatPercent(userStats.admins, userStats.total)} do total`}
+                  badgeTone="success"
+                />
+                <DashboardCard
+                  title="Coordenadores"
+                  value={userStats.coordinators}
+                  icon={<FaExclamationTriangle />}
+                  color="#f39c12"
+                  badge={`${formatPercent(userStats.coordinators, userStats.total)} do total`}
+                  badgeTone="warning"
+                />
+                <DashboardCard
+                  title="Supervisores"
+                  value={userStats.supervisors}
+                  icon={<FaPlay />}
+                  color="#3498db"
+                  badge={`${formatPercent(userStats.supervisors, userStats.total)} do total`}
+                  badgeTone="info"
+                />
               </div>
             </section>
 
@@ -1047,7 +1247,11 @@ function DashboardAdm() {
                           <td>{user.nome}</td>
                           <td>{user.usuario || "N/A"}</td>
                           <td>{user.cargo || "-"}</td>
-                          <td>{user.nivel_hierarquia ?? "-"}</td>
+                          <td>
+                            {user.nivel_hierarquia
+                              ? userNameById.get(String(user.nivel_hierarquia)) || "-"
+                              : "-"}
+                          </td>
                           <td>
                             <button type="button" className="adm2-btn adm2-btnPrimary" id={`adm2-btn-edit-${user.id}`} onClick={() => openEditModal(user)}>
                               Editar
@@ -1127,13 +1331,18 @@ function DashboardAdm() {
 
                 {/* ✅ NOVO: hierarquia */}
                 <div className="adm2-field">
-                  <label>Hierarquia</label>
-                  <input
-                    type="text"
+                  <label>{hierarchyLabelForCargo(newCargo || editingUser?.cargo)}</label>
+                  <select
                     value={newHierarquia}
                     onChange={(e) => setNewHierarquia(e.target.value)}
-                    placeholder="Ex: 1, 2, 3..."
-                  />
+                  >
+                    <option value="">Sem hierarquia</option>
+                    {hierarchyOptionsForCargo(newCargo || editingUser?.cargo).map((u) => (
+                      <option key={u.id} value={String(u.id)}>
+                        {u.nome}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="adm2-field">
@@ -1172,13 +1381,13 @@ function DashboardAdm() {
 
                 <div className="adm2-field">
                   <label>Supervisor</label>
-                  <select value={newSupervisorName} onChange={(e) => setNewSupervisorName(e.target.value)}>
+                  <select value={newSupervisorId} onChange={(e) => setNewSupervisorId(e.target.value)}>
                     <option value="todos" disabled>
                       Selecione...
                     </option>
                     {supervisorsList.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
+                      <option key={s.id} value={String(s.id)}>
+                        {s.nome}
                       </option>
                     ))}
                   </select>
@@ -1237,12 +1446,18 @@ function DashboardAdm() {
 
                   {/* ✅ NOVO: hierarquia */}
                   <div className="adm2-field">
-                    <label>Hierarquia</label>
-                    <input
+                    <label>{hierarchyLabelForCargo(createCargo)}</label>
+                    <select
                       value={createHierarquia}
                       onChange={(e) => setCreateHierarquia(e.target.value)}
-                      placeholder="Ex: 1, 2, 3..."
-                    />
+                    >
+                      <option value="">Sem hierarquia</option>
+                      {hierarchyOptionsForCargo(createCargo).map((u) => (
+                        <option key={u.id} value={String(u.id)}>
+                          {u.nome}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="adm2-field" style={{ gridColumn: "1 / -1" }}>

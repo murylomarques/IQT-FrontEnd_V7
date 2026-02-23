@@ -17,7 +17,7 @@ import {
   DetailCard, DetailGrid, DetailItem, BackButton,
   SchedulingSection, FormCard, FormGroup, FormRow, SubmitButton, CalendarCard,
   SkeletonBar,
-  ToggleFormGroup, SwitchLabel, SwitchInput, SwitchSlider
+  ToggleFormGroup, SwitchLabel, SwitchInput, SwitchSlider, AppointmentTag
 } from './styles';
 
 
@@ -51,7 +51,7 @@ const SkeletonPage = () => (
 // ==================== Componente Principal (Com a Lógica Corrigida) ====================
 const AgendamentoDetalhe = () => {
   // Seus hooks e estados (sem alterações)
-  const { user, logout, apiFetch, token } = useAuth(); // Pegando o token do useAuth
+  const { user, logout, apiFetch } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -64,6 +64,8 @@ const AgendamentoDetalhe = () => {
   const [fiscaisList, setFiscaisList] = useState([]);
   const [isFiscaisLoading, setIsFiscaisLoading] = useState(false);
   const [isAgendado, setIsAgendado] = useState(false);
+  const [fiscalAgenda, setFiscalAgenda] = useState([]);
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     data: '', hora: '', periodo: '', fiscalId: '', observacoes: ''
@@ -110,6 +112,38 @@ const AgendamentoDetalhe = () => {
     fetchAgendamento();
   }, [id, apiFetch, navigate]);
 
+  useEffect(() => {
+    if (!formData.fiscalId) {
+      setFiscalAgenda([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchFiscalAgenda = async () => {
+      setIsCalendarLoading(true);
+      try {
+        const data = await apiFetch(`/api/fiscais/${formData.fiscalId}/agenda`);
+        if (isMounted) {
+          setFiscalAgenda(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar agenda do fiscal:", error);
+        toast.error("Não foi possível carregar a agenda do fiscal.");
+      } finally {
+        if (isMounted) {
+          setIsCalendarLoading(false);
+        }
+      }
+    };
+
+    fetchFiscalAgenda();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [formData.fiscalId, apiFetch]);
+
   const handleFormChange = (event) => {
     const { name, value } = event.target;
     setFormData(prevData => ({ ...prevData, [name]: value }));
@@ -148,45 +182,29 @@ const AgendamentoDetalhe = () => {
     // Substituindo 'apiFetch' pela função 'fetch' padrão para diagnóstico.
 
     // Adicionando um console.log para ter certeza do que estamos enviando
-    console.log("Enviando para a API:", JSON.stringify(dataToSend, null, 2));
-    console.log("Enviando para a API:", token);
 
     try {
-      // A URL completa da sua API (ajuste se necessário)
-      const apiUrl = 'https://iqt.desktop.com.br/api/api/agenda';
-
-      const response = await fetch(apiUrl, {
+      await apiFetch('/api/agenda', {
         method: 'POST',
+        data: dataToSend,
         headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            // Adicione o header de autorização, se sua API precisar
-            'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(dataToSend),
       });
 
-      // Se a resposta NÃO for OK (ex: 422, 500, etc.), trata como erro
-      if (!response.ok) {
-          // Tenta extrair o JSON de erro do corpo da resposta
-          const errorData = await response.json();
-          // Lança um erro com os dados para ser pego pelo bloco 'catch'
-          throw errorData;
-      }
-      
-      // Se a resposta for OK (200, 201), continua para o sucesso
       toast.success("Vistoria agendada com sucesso!");
       navigate('/agendamentos');
 
     } catch (error) {
       console.error("Erro ao salvar agendamento:", error);
-      
-      // Agora o 'error' pode conter o objeto de erros do Laravel
-      if (error && error.errors) {
-        const errorMessages = Object.values(error.errors).flat().join('\n');
+
+      const apiErrors = error?.response?.data?.errors || error?.errors;
+      if (apiErrors) {
+        const errorMessages = Object.values(apiErrors).flat().join('\n');
         toast.error(errorMessages);
       } else {
-        toast.error("Falha ao salvar. Verifique a conexão e tente novamente.");
+        toast.error("Falha ao salvar. Verifique a conexao e tente novamente.");
       }
 
     } finally {
@@ -198,8 +216,87 @@ const AgendamentoDetalhe = () => {
   const selectedFiscalName = useMemo(() => {
     if (!formData.fiscalId || fiscaisList.length === 0) return '';
     const fiscal = fiscaisList.find(f => f.id.toString() === formData.fiscalId);
-    return fiscal ? fiscal.name : '';
+    return fiscal ? (fiscal.nome || fiscal.name || '') : '';
   }, [formData.fiscalId, fiscaisList]);
+
+  const fiscalAgendaByDate = useMemo(() => {
+    return fiscalAgenda.reduce((acc, item) => {
+      const dateKey = (item?.data_agendamento || '').toString().split('T')[0];
+      if (!dateKey) return acc;
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(item);
+      return acc;
+    }, {});
+  }, [fiscalAgenda]);
+
+  const getStatusColor = (status) => {
+    if (!status) return '#f4ba44';
+    const normalized = status.toString().toLowerCase();
+    if (normalized.includes('conclu')) return '#22c55e';
+    if (normalized.includes('pend')) return '#f59e0b';
+    if (normalized.includes('cancel')) return '#ef4444';
+    return '#f4ba44';
+  };
+
+  const renderCalendarAppointments = ({ date, view }) => {
+    if (view !== 'month') return null;
+
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+      date.getDate()
+    ).padStart(2, '0')}`;
+    const appointments = fiscalAgendaByDate[dateKey] || [];
+
+    if (appointments.length === 0) return null;
+
+    return (
+      <div className="appointments-container">
+        {appointments.slice(0, 2).map((agendamento) => (
+          <AppointmentTag
+            key={agendamento.id}
+            color={getStatusColor(agendamento.status)}
+            title={`${agendamento.periodo || 'Sem período'} - ${agendamento.status || 'Sem status'}`}
+          >
+            {agendamento.periodo || 'Agendado'}
+          </AppointmentTag>
+        ))}
+        {appointments.length > 2 && (
+          <AppointmentTag color="#6b7280" title={`${appointments.length} agendamento(s)`}>
+            +{appointments.length - 2}
+          </AppointmentTag>
+        )}
+      </div>
+    );
+  };
+
+  const selectedDateKey = useMemo(() => {
+    if (!(scheduleDate instanceof Date)) return '';
+    return `${scheduleDate.getFullYear()}-${String(scheduleDate.getMonth() + 1).padStart(2, '0')}-${String(
+      scheduleDate.getDate()
+    ).padStart(2, '0')}`;
+  }, [scheduleDate]);
+
+  const selectedDateLabel = useMemo(() => {
+    if (!(scheduleDate instanceof Date)) return '';
+    return scheduleDate.toLocaleDateString('pt-BR');
+  }, [scheduleDate]);
+
+  const selectedDayAppointments = useMemo(() => {
+    const list = fiscalAgendaByDate[selectedDateKey] || [];
+    return [...list].sort((a, b) => {
+      const horaA = (a.hora_agendamento || '').toString();
+      const horaB = (b.hora_agendamento || '').toString();
+      return horaA.localeCompare(horaB);
+    });
+  }, [fiscalAgendaByDate, selectedDateKey]);
+
+  const handleCalendarChange = (value) => {
+    if (!(value instanceof Date)) return;
+    setScheduleDate(value);
+    const dateForInput = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(
+      value.getDate()
+    ).padStart(2, '0')}`;
+    setFormData(prev => ({ ...prev, data: dateForInput }));
+  };
 
 
   return (
@@ -286,7 +383,60 @@ const AgendamentoDetalhe = () => {
               </FormCard>
               <CalendarCard>
                 <h4>{selectedFiscalName ? `Agenda de ${selectedFiscalName}` : 'Selecione um fiscal para ver a agenda'}</h4>
-                <Calendar onChange={setScheduleDate} value={scheduleDate} />
+                {selectedFiscalName && isCalendarLoading && (
+                  <p style={{ textAlign: 'center', margin: '0 0 12px 0', color: '#6b7280' }}>Carregando agenda...</p>
+                )}
+                <Calendar
+                  onChange={handleCalendarChange}
+                  value={scheduleDate}
+                  tileContent={renderCalendarAppointments}
+                />
+                {selectedFiscalName && !isCalendarLoading && (
+                  <div style={{ marginTop: '16px' }}>
+                    <h4 style={{ marginBottom: '8px' }}>Detalhes de {selectedDateLabel}</h4>
+                    {selectedDayAppointments.length === 0 ? (
+                      <p style={{ margin: 0, color: '#6b7280', textAlign: 'center' }}>
+                        Nenhum agendamento neste dia.
+                      </p>
+                    ) : (
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        {selectedDayAppointments.map((agendamento) => (
+                          <div
+                            key={agendamento.id}
+                            style={{
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              padding: '10px',
+                              background: '#fafafa',
+                            }}
+                          >
+                            <div style={{ fontWeight: 700, color: '#531110', marginBottom: '4px' }}>
+                              {agendamento.hora_agendamento || 'Sem hora'} | {agendamento.periodo || 'Sem período'}
+                            </div>
+                            <div style={{ fontSize: '0.9rem', color: '#374151' }}>
+                              Status: {agendamento.status || 'Sem status'}
+                            </div>
+                            {agendamento.numero_compromisso && (
+                              <div style={{ fontSize: '0.9rem', color: '#374151' }}>
+                                SA: {agendamento.numero_compromisso}
+                              </div>
+                            )}
+                            {agendamento.nome_conta && (
+                              <div style={{ fontSize: '0.9rem', color: '#374151' }}>
+                                Cliente: {agendamento.nome_conta}
+                              </div>
+                            )}
+                            {agendamento.endereco && (
+                              <div style={{ fontSize: '0.9rem', color: '#374151' }}>
+                                Endereço: {agendamento.endereco}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </CalendarCard>
             </SchedulingSection>
           </>

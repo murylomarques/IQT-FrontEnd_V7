@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import SkeletonScreen from '../../components/SkeletonScreen';
 
 import ChecklistItem from '../../components/ChecklistItem';
 import { questionsMap } from './checklistData';
@@ -24,6 +25,9 @@ import {
   InfoLabel,
   InfoValue
 } from '../../styles/GlobalStyle';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
 
 const MAX_POSTES = 3;
 
@@ -143,7 +147,7 @@ const VistoriaDetalhe = () => {
     });
 
     try {
-      const res = await fetch("https://iqt.desktop.com.br/api/api/vistorias", {
+      const res = await fetch(`${API_BASE_URL}/api/vistorias`, {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -169,7 +173,7 @@ const VistoriaDetalhe = () => {
   // RENDER
   // -------------------------
   if (loading)
-    return <VistoriaContainer><Title>Carregando...</Title></VistoriaContainer>;
+    return <VistoriaContainer><SkeletonScreen variant="detail" /></VistoriaContainer>;
 
   if (!vistoriaInfo)
     return <VistoriaContainer><Title>Agendamento não encontrado</Title></VistoriaContainer>;

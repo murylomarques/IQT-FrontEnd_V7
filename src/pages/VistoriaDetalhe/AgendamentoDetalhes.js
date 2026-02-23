@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import SkeletonScreen from '../../components/SkeletonScreen';
 import { 
   Container, 
   Title, 
-  LoadingSpinner, 
   ErrorMessage,
   InfoCard, 
   InfoRow, 
@@ -37,7 +37,7 @@ const AgendamentoDetalhes = () => {
     fetchAgendamento();
   }, [apiFetch, id]);
 
-  if (isLoading) return <Container><LoadingSpinner /></Container>;
+  if (isLoading) return <Container><SkeletonScreen variant="detail" /></Container>;
   if (error) return <Container><ErrorMessage>{error}</ErrorMessage></Container>;
 
   return (

@@ -1,12 +1,13 @@
 // src/components/DataLoader/index.js
 import { useState, useEffect } from 'react';
-import { Skeleton, DevelopmentWarning } from '../../pages/Dashboard/styles';
+import { DevelopmentWarning } from '../../pages/Dashboard/styles';
+import SkeletonScreen, { SkeletonBlock } from '../SkeletonScreen';
 import { FaHardHat } from "react-icons/fa";
 
 
 // duration: tempo em ms que o skeleton fica visível
 // inDevelopment: se for true, mostra o aviso após o loading
-const DataLoader = ({ children, duration = 0, inDevelopment = false }) => {
+const DataLoader = ({ children, duration = 0, inDevelopment = false, variant = 'page' }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +20,10 @@ const DataLoader = ({ children, duration = 0, inDevelopment = false }) => {
   }, [duration]);
 
   if (isLoading) {
-    return <Skeleton />;
+    if (variant === 'block') {
+      return <SkeletonBlock height="100%" width="100%" radius="12px" />;
+    }
+    return <SkeletonScreen variant={variant} />;
   }
 
   if (inDevelopment) {
