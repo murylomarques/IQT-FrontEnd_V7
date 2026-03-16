@@ -179,6 +179,7 @@ const VistoriaDetalhe = () => {
     return <VistoriaContainer><Title>Agendamento não encontrado</Title></VistoriaContainer>;
 
   const defaultQuestions = vistoriaType ? questionsMap[vistoriaType] : [];
+  const sa = vistoriaInfo.numero_compromisso || vistoriaInfo.caso || "N/A";
 
   return (
     <VistoriaContainer>
@@ -191,6 +192,7 @@ const VistoriaDetalhe = () => {
           <SectionTitle>Informações</SectionTitle>
           <InfoGrid>
             <InfoItem><InfoLabel>Cliente:</InfoLabel><InfoValue>{vistoriaInfo.nome_conta}</InfoValue></InfoItem>
+            <InfoItem><InfoLabel>SA:</InfoLabel><InfoValue>{sa}</InfoValue></InfoItem>
             <InfoItem><InfoLabel>Endereço:</InfoLabel><InfoValue>{vistoriaInfo.endereco}</InfoValue></InfoItem>
             <InfoItem><InfoLabel>Técnico:</InfoLabel><InfoValue>{vistoriaInfo.nome_tecnico}</InfoValue></InfoItem>
             <InfoItem><InfoLabel>Data:</InfoLabel><InfoValue>{formatarData(vistoriaInfo.data_agendamento)}</InfoValue></InfoItem>

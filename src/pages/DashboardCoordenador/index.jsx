@@ -164,7 +164,6 @@ const DashboardCoordenador = () => {
                 <Th>Supervisor</Th>
                 <Th>Nome Técnico</Th>
                 <Th>Status</Th>
-                <Th>Responsável</Th>
                 <Th>Início</Th>
                 <Th>Fim</Th>
               </Tr>
@@ -175,7 +174,6 @@ const DashboardCoordenador = () => {
                   <Td>{task.nome_supervisor || 'N/A'}</Td>
                   <Td>{task.nome_tecnico}</Td>
                   <Td>{task.status}</Td>
-                  <Td>{task.responsavel || 'N/A'}</Td>
                   <Td>{new Date(task.data_inicio).toLocaleDateString()}</Td>
                   <Td>{task.data_fim ? new Date(task.data_fim).toLocaleDateString() : '-'}</Td>
                 </Tr>

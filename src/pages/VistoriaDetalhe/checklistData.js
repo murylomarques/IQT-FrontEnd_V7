@@ -34,7 +34,7 @@ export const vistoriaCompletaQuestions = [
   { key: 'teste_velocidade_pontos', label: 'Teste de velocidade em múltiplos pontos internos', requiresPhoto: false },
   { key: 'cliente_app_desktop', label: 'Cliente ciente do APP Desktop (técnico informou)', requiresPhoto: false },
 
-  { key: 'necessita_retorno', label: 'É necessário retorno do técnico?', requiresPhoto: false },
+  
 ];
 
 
@@ -58,7 +58,7 @@ export const vistoriaExternaQuestions = [
   { key: 'esticadores_corretos', label: 'Esticadores instalados e utilizados da forma correta' },
   { key: 'equipagem_poste_cliente', label: 'Equipagem do poste do cliente (PTR)' },
 
-  { key: 'necessita_retorno', label: 'É necessário retorno do técnico?', requiresPhoto: false },
+ 
 ];
 
 
@@ -81,7 +81,7 @@ export const vistoriaInternaQuestions = [
   { key: 'teste_velocidade_pontos', label: 'Teste de velocidade em múltiplos pontos internos', requiresPhoto: false },
   { key: 'cliente_app_desktop', label: 'Cliente ciente do APP Desktop (técnico informou)', requiresPhoto: false },
 
-  { key: 'necessita_retorno', label: 'É necessário retorno do técnico?', requiresPhoto: false },
+ 
 ];
 
 
