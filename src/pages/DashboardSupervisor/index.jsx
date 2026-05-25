@@ -1,248 +1,208 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import {
-  FaListUl,
-  FaPlay,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaExclamationTriangle,
-  FaChartLine,
-  FaPlus,
-  FaSyncAlt,
-} from 'react-icons/fa';
+  FcaGlobal, AppBg, Topbar, BrandWrap, BrandCode, BrandText, SessionBox,
+  MainShell, AppLayout, Sidebar, NavBtn, ContentShell,
+  PageTitle, Card, CardTitle, FormGrid, Field, Label, Select, Btn,
+  TableWrap, Table, RoleBadge, WindowBadge, MetricsGrid, MiniCard, EmptyState,
+} from '../FCA/theme';
+import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
 
-// Importando todos os componentes de estilo do arquivo styles.js
-import {
-  DashboardContainer,
-  Header,
-  WelcomeHeader,
-  KpiGrid,
-  TableSection,
-  TableHeader,
-  HeaderActions,
-  ActionButton,
-  FilterSelect,
-  EmptyState,
-  IconWrapper,
-  StyledTable,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableActionButton,
-} from './styles';
-
-// Importando o componente de card reutilizável
-import DashboardCard from '../../components/DashboardCard/index';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
-
+const TABS = ['Minha Equipe', 'Vincular'];
 
 const DashboardSupervisor = () => {
-  // --- ESTADOS DO COMPONENTE ---
-  const [tasks, setTasks] = useState([]); // Armazena TODOS os registros da API
-  const [tableTasks, setTableTasks] = useState([]); // Armazena os registros filtrados para a tabela
-  const [timeFilter, setTimeFilter] = useState('todos'); // Estado do filtro de tempo
-  const [userName, setUserName] = useState('Carregando...'); // Nome do usuário logado
-  const navigate = useNavigate(); // Hook para navegação programática
+  const navigate = useNavigate();
+  const name     = fcaStorage.get('name') || 'Supervisor';
+  const role     = fcaStorage.get('role');
+  const myId     = fcaStorage.get('id');
 
-  // --- FUNÇÃO PARA BUSCAR DADOS (reutilizável com useCallback) ---
-  const fetchRegistros = useCallback(async () => {
+  const [tab,          setTab]      = useState('Minha Equipe');
+  const [subordinates, setSubs]     = useState([]);
+  const [available,    setAvailable]= useState([]);
+  const [winData,      setWinData]  = useState(null);
+  const [linkChild,    setLinkChild]= useState('');
+  const [metrics,      setMetrics]  = useState(null);
+  const [loading,      setLoading]  = useState(false);
+
+  useEffect(() => {
+    if (!fcaStorage.get('token') || role !== 'supervisao') navigate('/login/FCA');
+  }, [navigate, role]);
+
+  const loadData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('FCA-token');
-      const nome = localStorage.getItem('FCA-nome');
-      if (nome) setUserName(nome);
+      const [sub, win, dash] = await Promise.all([
+        fcaFetch('/fca/hierarchy'),
+        fcaFetch('/fca/window'),
+        fcaFetch('/fca/dashboard'),
+      ]);
+      setSubs(sub.direct);
+      setWinData(win);
+      setMetrics(dash.metrics);
+      setAvailable((dash.visible_users || []).filter((u) => u.role === 'tecnico' && !u.manager_id));
+    } catch (err) { toast.error(err.message); }
+  }, []);
 
-      if (!token) {
-        toast.error('Token não encontrado. Faça login novamente.');
-        navigate('/login/FCA'); // Redireciona para o login FCA se não houver token
-        return;
-      }
+  useEffect(() => { loadData(); }, [loadData]);
 
-      const response = await axios.get(`${API_BASE_URL}/api/fca/registros`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setTasks(response.data);
-    } catch (error) {
-      console.error('Erro ao buscar registros:', error);
-      toast.error('Falha ao buscar os dados do servidor.');
-    }
-  }, [navigate]); // navigate é uma dependência estável
-
-  // --- EFEITOS (LIFECYCLE) ---
-
-  // Efeito para buscar os dados da API quando o componente é montado
-  useEffect(() => {
-    fetchRegistros();
-  }, [fetchRegistros]); // O array de dependência garante que o fetch ocorra na montagem
-
-  // Efeito para filtrar os dados da tabela sempre que o filtro ou os dados principais mudarem
-  useEffect(() => {
-    let filtered = tasks.filter((t) => t.realizado === 1 || t.realizado === true);
-
-    if (timeFilter === 'mes') {
-      const hoje = new Date();
-      const mesAtual = hoje.getMonth();
-      const anoAtual = hoje.getFullYear();
-      filtered = filtered.filter((t) => {
-        const dataInicio = new Date(t.data_inicio);
-        return dataInicio.getMonth() === mesAtual && dataInicio.getFullYear() === anoAtual;
-      });
-    } else if (timeFilter === 'vencidos') {
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
-      filtered = filtered.filter(
-        (t) => t.status === 'Vencido' || (t.data_fim && new Date(t.data_fim) < hoje)
-      );
-    }
-
-    setTableTasks(filtered);
-  }, [timeFilter, tasks]);
-
-  // --- DADOS MEMORIZADOS ---
-
-  // Calcula os KPIs de forma otimizada, apenas quando a lista de 'tasks' muda
-  const kpiData = useMemo(() => {
-    return {
-      total: tasks.length,
-      pendentes: tasks.filter((t) => t.status === 'Pendente').length,
-      emExecucao: tasks.filter((t) => t.status === 'Em Execução').length,
-      finalizado: tasks.filter((t) => t.status === 'Concluído').length,
-      naoExecutado: tasks.filter((t) => t.status === 'Vencido').length,
-    };
-  }, [tasks]);
-
-  // --- FUNÇÕES DE MANIPULAÇÃO DE EVENTOS ---
-
-  // Navega para a página de inserção de FCA
-  const handleNavigateToInsert = () => {
-    navigate('/dashboard/inserir-fca');
+  const handleLink = async (e) => {
+    e.preventDefault();
+    if (!linkChild) { toast.error('Selecione um técnico.'); return; }
+    setLoading(true);
+    try {
+      const res = await fcaFetch('/fca/hierarchy/link', { method: 'POST', body: JSON.stringify({ parent_id: +myId, child_id: +linkChild }) });
+      toast.success(res.applied ? 'Vínculo criado.' : 'Solicitação enviada para aprovação.');
+      setLinkChild('');
+      loadData();
+    } catch (err) { toast.error(err.message); }
+    finally { setLoading(false); }
   };
 
-  // Altera o status de uma tarefa
-  const handleChangeStatus = async (taskId) => {
-    const taskToUpdate = tasks.find((t) => t.id === taskId);
-    if (!taskToUpdate) return;
-
-    // Define a ordem de progressão dos status
-    const statusCycle = {
-      'Pendente': 'Em Execução',
-      'Em Execução': 'Concluído',
-    };
-    const nextStatus = statusCycle[taskToUpdate.status];
-
-    // Se não houver próximo status, a ação não pode progredir
-    if (!nextStatus) {
-      toast.info('Esta ação já foi concluída ou vencida e não pode ser avançada.');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('FCA-token');
-      // Rota para atualizar um registro específico
-      await axios.put(
-        `${API_BASE_URL}/api/fca/registros/${taskId}`,
-        { status: nextStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Atualiza o estado local para refletir a mudança imediatamente (Atualização Otimista)
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === taskId ? { ...task, status: nextStatus } : task
-        )
-      );
-
-      toast.success(`Ação #${taskId} atualizada para "${nextStatus}"!`);
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      toast.error('Não foi possível atualizar o status da ação.');
-    }
+  const handleUnlink = async (childId) => {
+    if (!window.confirm('Remover vínculo?')) return;
+    try { await fcaFetch(`/fca/hierarchy/unlink/${childId}`, { method: 'DELETE' }); toast.success('Vínculo removido.'); loadData(); }
+    catch (err) { toast.error(err.message); }
   };
 
-  // --- RENDERIZAÇÃO DO COMPONENTE ---
+  const logout = () => { fcaStorage.clear(); navigate('/login/FCA'); };
+
   return (
-    <DashboardContainer>
-      <Header>
-        <WelcomeHeader>
-          <h1>Bem-vindo de volta, {userName}!</h1>
-          <p>Aqui está o resumo dos planos de ação de hoje.</p>
-        </WelcomeHeader>
-      </Header>
+    <div className="fca-root">
+      <FcaGlobal />
+      <AppBg>
+        <Topbar>
+          <BrandWrap>
+            <BrandCode>GH</BrandCode>
+            <BrandText>
+              <div className="brand-title">FCA</div>
+              <div className="brand-sub">Gestão de Hierarquia por Perfil</div>
+            </BrandText>
+          </BrandWrap>
+          <SessionBox>
+            <div>
+              <div className="session-name">{name}</div>
+              <div className="session-role">{ROLE_LABELS[role] || role}</div>
+            </div>
+            <Btn $variant="outline" className="btn-sm" onClick={logout}>Sair</Btn>
+          </SessionBox>
+        </Topbar>
 
-      <KpiGrid>
-        <DashboardCard title="Total de Ações" value={kpiData.total} icon={<FaListUl />} color="#8e44ad" />
-        <DashboardCard title="Pendentes" value={kpiData.pendentes} icon={<FaExclamationTriangle />} color="#f39c12" />
-        <DashboardCard title="Em Execução" value={kpiData.emExecucao} icon={<FaPlay />} color="#3498db" />
-        <DashboardCard title="Finalizadas" value={kpiData.finalizado} icon={<FaCheckCircle />} color="#2ecc71" />
-        <DashboardCard title="Não Executadas" value={kpiData.naoExecutado} icon={<FaTimesCircle />} color="#e74c3c" />
-      </KpiGrid>
-
-      <TableSection>
-        <TableHeader>
-          <HeaderActions>
-            <h2>Plano de Ação Detalhado</h2>
-            <ActionButton onClick={handleNavigateToInsert}>
-              <FaPlus />
-              Inserir FCA
-            </ActionButton>
-          </HeaderActions>
-          
-          <FilterSelect value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
-            <option value="todos">Mostrar Todos</option>
-            <option value="mes">Ações do Mês</option>
-            <option value="vencidos">Ações Vencidas</option>
-          </FilterSelect>
-        </TableHeader>
-
-        {tableTasks.length === 0 ? (
-          <EmptyState>
-            <IconWrapper>
-              <FaChartLine />
-            </IconWrapper>
-            <h3>Nenhuma ação encontrada para este filtro</h3>
-            <p>Os dados do plano de ação aparecerão aqui assim que forem cadastrados ou o filtro for alterado.</p>
-          </EmptyState>
-        ) : (
-          <StyledTable>
-            <Thead>
-              <Tr>
-                <Th>Nome Técnico</Th>
-                <Th>Status</Th>
-                <Th>Responsável</Th>
-                <Th>Início</Th>
-                <Th>Fim</Th>
-                <Th style={{ textAlign: 'right' }}>Ações</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {tableTasks.map((task) => (
-                <Tr key={task.id}>
-                  <Td>{task.nome_tecnico}</Td>
-                  <Td>{task.status}</Td>
-                  <Td>{task.responsavel || 'Não atribuído'}</Td>
-                  <Td>{new Date(task.data_inicio).toLocaleDateString()}</Td>
-                  <Td>{task.data_fim ? new Date(task.data_fim).toLocaleDateString() : '-'}</Td>
-                  <Td isActionCell>
-                    <TableActionButton
-                      onClick={() => handleChangeStatus(task.id)}
-                      disabled={task.status === 'Concluído' || task.status === 'Vencido'}
-                    >
-                      <FaSyncAlt size={12} />
-                      Avançar Status
-                    </TableActionButton>
-                  </Td>
-                </Tr>
+        <MainShell>
+          <AppLayout>
+            <Sidebar>
+              {TABS.map((t) => (
+                <NavBtn key={t} $active={tab === t} onClick={() => setTab(t)}>{t}</NavBtn>
               ))}
-            </Tbody>
-          </StyledTable>
-        )}
-      </TableSection>
-    </DashboardContainer>
+            </Sidebar>
+
+            <ContentShell>
+              {/* ── MINHA EQUIPE ── */}
+              {tab === 'Minha Equipe' && (
+                <>
+                  <PageTitle>Minha <span>Equipe</span></PageTitle>
+
+                  {metrics && (
+                    <MetricsGrid>
+                      <MiniCard>
+                        <div className="mini-label">Técnicos vinculados</div>
+                        <span className="mini-value">{subordinates.length}</span>
+                      </MiniCard>
+                      <MiniCard>
+                        <div className="mini-label">Disponíveis p/ vínculo</div>
+                        <span className="mini-value">{available.length}</span>
+                      </MiniCard>
+                    </MetricsGrid>
+                  )}
+
+                  {winData && (
+                    <div style={{ marginBottom: '1.1rem' }}>
+                      <WindowBadge $open={winData.status.is_open}>
+                        <span className="dot" />
+                        {winData.status.is_open
+                          ? `Janela aberta — dias ${winData.config.start_day} a ${winData.config.end_day}`
+                          : `Janela fechada — abre dia ${winData.config.start_day}`}
+                      </WindowBadge>
+                      {!winData.status.is_open && (
+                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                          Fora da janela, vínculos são enviados para aprovação do administrador.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <Card>
+                    <CardTitle>Técnicos vinculados a você</CardTitle>
+                    <TableWrap>
+                      <Table>
+                        <thead><tr><th>Nome</th><th>Matrícula</th><th>Perfil</th><th>Território</th><th>Cargo</th><th>Ação</th></tr></thead>
+                        <tbody>
+                          {subordinates.map((u) => (
+                            <tr key={u.id}>
+                              <td><strong>{u.name}</strong></td>
+                              <td style={{ color: 'var(--text-muted)' }}>{u.employee_id || '—'}</td>
+                              <td><RoleBadge $role={u.role}>{ROLE_LABELS[u.role] || u.role}</RoleBadge></td>
+                              <td>{u.territory || '—'}</td>
+                              <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{u.title || '—'}</td>
+                              <td>
+                                <Btn $variant="danger" className="btn-sm" onClick={() => handleUnlink(u.id)}>Desvincular</Btn>
+                              </td>
+                            </tr>
+                          ))}
+                          {subordinates.length === 0 && (
+                            <tr><td colSpan={6}><EmptyState><div className="empty-icon">👥</div>Nenhum técnico vinculado ainda.</EmptyState></td></tr>
+                          )}
+                        </tbody>
+                      </Table>
+                    </TableWrap>
+                  </Card>
+                </>
+              )}
+
+              {/* ── VINCULAR ── */}
+              {tab === 'Vincular' && (
+                <>
+                  <PageTitle>Vincular <span>Técnico</span></PageTitle>
+                  <Card style={{ maxWidth: 500 }}>
+                    <CardTitle>Novo vínculo</CardTitle>
+                    {winData && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <WindowBadge $open={winData.status.is_open}>
+                          <span className="dot" />
+                          {winData.status.is_open ? 'Janela aberta — vínculo imediato' : 'Janela fechada — enviará para aprovação'}
+                        </WindowBadge>
+                      </div>
+                    )}
+                    <form onSubmit={handleLink}>
+                      <FormGrid style={{ gridTemplateColumns: '1fr' }}>
+                        <Field>
+                          <Label>Técnico disponível *</Label>
+                          <Select value={linkChild} onChange={(e) => setLinkChild(e.target.value)}>
+                            <option value="">Selecione um técnico...</option>
+                            {available.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}{t.territory ? ` — ${t.territory}` : ''}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      </FormGrid>
+                      <Btn type="submit" disabled={loading || !linkChild}>
+                        {loading ? 'Salvando...' : winData?.status?.is_open ? 'Vincular agora' : 'Enviar solicitação'}
+                      </Btn>
+                    </form>
+                    {available.length === 0 && (
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+                        Nenhum técnico disponível para vínculo no momento.
+                      </p>
+                    )}
+                  </Card>
+                </>
+              )}
+            </ContentShell>
+          </AppLayout>
+        </MainShell>
+      </AppBg>
+    </div>
   );
 };
 

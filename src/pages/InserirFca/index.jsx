@@ -1,239 +1,125 @@
-// src/pages/InserirFca/index.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import './styles.css';
+import { toast } from 'react-toastify';
+import {
+  FcaGlobal, AppBg, Topbar, BrandWrap, BrandCode, BrandText, SessionBox,
+  MainShell, Card, CardTitle, PageTitle, TableWrap, Table,
+  RoleBadge, Btn, WindowBadge,
+} from '../FCA/theme';
+import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
-const MAX_CHARS = 255;
-
-function InserirFca() {
+const FcaViewer = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    tecnico: '',
-    fato: '',
-    causa: '',
-    acao: '',
-    status: 'Pendente',
-    responsavel: '',
-    dataInicio: '',
-    dataFim: '',
-  });
+  const name     = fcaStorage.get('name') || 'Usuário';
+  const role     = fcaStorage.get('role');
 
-  const [registrosDisponiveis, setRegistrosDisponiveis] = useState([]); 
-  const [registroSelecionado, setRegistroSelecionado] = useState(null);
+  const [me,      setMe]      = useState(null);
+  const [manager, setManager] = useState(null);
+  const [winData, setWinData] = useState(null);
 
-  // 📡 Busca registros da API
   useEffect(() => {
-    const fetchRegistros = async () => {
-      try {
-        const token = localStorage.getItem('FCA-token');
-        if (!token) {
-          console.error('Token não encontrado.');
-          navigate('/login/FCA');
-          return;
-        }
+    if (!fcaStorage.get('token')) { navigate('/login/FCA'); return; }
+    if (role === 'admin')       navigate('/dashboard/adm');
+    if (role === 'coordenacao') navigate('/dashboard/coordenador');
+    if (role === 'supervisao')  navigate('/dashboard/supervisor');
+  }, [navigate, role]);
 
-        const response = await axios.get(`${API_BASE_URL}/api/fca/registros`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const hoje = new Date();
-        const registrosValidos = response.data.filter(
-          r => r.realizado === false && new Date(r.data_fim) >= hoje
-        );
-
-        setRegistrosDisponiveis(registrosValidos);
-      } catch (error) {
-        console.error('Erro ao buscar registros:', error);
+  const loadData = useCallback(async () => {
+    try {
+      const [meData, win] = await Promise.all([fcaFetch('/fca/me'), fcaFetch('/fca/window')]);
+      setMe(meData);
+      setWinData(win);
+      if (meData.manager_id) {
+        const dash = await fcaFetch('/fca/dashboard');
+        setManager((dash.visible_users || []).find((u) => u.id === meData.manager_id) || null);
       }
-    };
-
-    fetchRegistros();
+    } catch (err) { toast.error(err.message); }
   }, []);
 
-  // Quando seleciona um técnico
-  const handleTecnicoChange = (e) => {
-    const tecnico = e.target.value;
-    setFormData(prev => ({ ...prev, tecnico }));
+  useEffect(() => { loadData(); }, [loadData]);
 
-    const registro = registrosDisponiveis.find(r => r.nome_tecnico === tecnico);
-    if (registro) {
-      setRegistroSelecionado(registro);
-      setFormData(prev => ({
-        ...prev,
-        fato: registro.fato,
-        responsavel: registro.responsavel,
-        dataInicio: registro.data_inicio.slice(0, 10),
-        dataFim: registro.data_fim.slice(0, 10),
-        causa: '',
-        acao: '',
-        status: 'Pendente'
-      }));
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleTextareaChange = (e) => {
-    const { name, value } = e.target;
-    if (value.length <= MAX_CHARS) {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
-
-  // ✅ Envia dados para a API
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validação básica
-    const obrigatorios = ['tecnico', 'causa', 'acao', 'status'];
-    for (let campo of obrigatorios) {
-      if (!formData[campo]) {
-        alert(`O campo "${campo}" é obrigatório!`);
-        return;
-      }
-    }
-
-    if (!registroSelecionado) {
-      alert("Selecione um técnico válido.");
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('FCA-token');
-      if (!token) {
-        alert("Token não encontrado. Faça login novamente.");
-        navigate('/login/FCA');
-        return;
-      }
-
-      // Monta payload
-      const payload = {
-        id: registroSelecionado.id,
-        status: formData.status,
-        causa: formData.causa,
-        acao: formData.acao,
-      };
-
-      // Envia para a API (PUT ou PATCH dependendo do backend)
-      await axios.put(`${API_BASE_URL}/api/fca/registros/${registroSelecionado.id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      alert("FCA atualizado com sucesso!");
-      // Limpar formulário ou atualizar lista se necessário
-      setFormData({
-        tecnico: '',
-        fato: '',
-        causa: '',
-        acao: '',
-        status: 'Pendente',
-        responsavel: '',
-        dataInicio: '',
-        dataFim: '',
-      });
-      setRegistroSelecionado(null);
-
-    } catch (error) {
-      console.error('Erro ao enviar dados:', error);
-      alert("Ocorreu um erro ao registrar o FCA. Verifique o console.");
-    }
-  };
+  const logout = () => { fcaStorage.clear(); navigate('/login/FCA'); };
 
   return (
-    <div className="form-page-container">
-      <div className="form-header">
-        <h1>Inserir Novo FCA</h1>
-        <p>Preencha os campos obrigatórios do FCA abaixo.</p>
-      </div>
-      <form onSubmit={handleSubmit} className="fca-form">
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="tecnico">Técnico *</label>
-            <select
-              id="tecnico"
-              name="tecnico"
-              value={formData.tecnico}
-              onChange={handleTecnicoChange}
-              required
-            >
-              <option value="" disabled>Selecione o Técnico</option>
-              {registrosDisponiveis.map(r => (
-                <option key={r.id} value={r.nome_tecnico}>{r.nome_tecnico}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label htmlFor="status">Status *</label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="Pendente">Pendente</option>
-              <option value="Em Execução">Em Execução</option>
-              <option value="Finalizado">Finalizado</option>
-              <option value="Não Executado">Não Executado</option>
-            </select>
-          </div>
-        </div>
+    <div className="fca-root">
+      <FcaGlobal />
+      <AppBg>
+        <Topbar>
+          <BrandWrap>
+            <BrandCode>GH</BrandCode>
+            <BrandText>
+              <div className="brand-title">FCA</div>
+              <div className="brand-sub">Gestão de Hierarquia por Perfil</div>
+            </BrandText>
+          </BrandWrap>
+          <SessionBox>
+            <div>
+              <div className="session-name">{name}</div>
+              <div className="session-role">{ROLE_LABELS[role] || role}</div>
+            </div>
+            <Btn $variant="outline" className="btn-sm" onClick={logout}>Sair</Btn>
+          </SessionBox>
+        </Topbar>
 
-        <div className="form-group">
-          <label htmlFor="fato">Fato *</label>
-          <textarea id="fato" name="fato" value={formData.fato} readOnly />
-        </div>
+        <MainShell>
+          <PageTitle>Minha <span>Posição</span></PageTitle>
 
-        <div className="form-group">
-          <label htmlFor="causa">Causa *</label>
-          <textarea
-            id="causa"
-            name="causa"
-            placeholder="Identifique a causa raiz..."
-            value={formData.causa}
-            onChange={handleTextareaChange}
-            required
-          />
-          <small className="char-counter">{formData.causa.length}/{MAX_CHARS}</small>
-        </div>
+          {winData && (
+            <div style={{ marginBottom: '1.2rem' }}>
+              <WindowBadge $open={winData.status.is_open}>
+                <span className="dot" />
+                {winData.status.is_open
+                  ? `Janela de vínculos aberta — dias ${winData.config.start_day} a ${winData.config.end_day}`
+                  : 'Janela de vínculos fechada'}
+              </WindowBadge>
+            </div>
+          )}
 
-        <div className="form-group">
-          <label htmlFor="acao">Ação *</label>
-          <textarea
-            id="acao"
-            name="acao"
-            placeholder="Descreva a ação corretiva..."
-            value={formData.acao}
-            onChange={handleTextareaChange}
-            required
-          />
-          <small className="char-counter">{formData.acao.length}/{MAX_CHARS}</small>
-        </div>
+          {me && (
+            <Card style={{ maxWidth: 600 }}>
+              <CardTitle>Seus dados</CardTitle>
+              <TableWrap>
+                <Table style={{ minWidth: 0 }}>
+                  <tbody>
+                    <tr><td style={{ color: 'var(--text-muted)', width: 140, fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nome</td><td><strong>{me.name}</strong></td></tr>
+                    <tr><td style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Usuário</td><td>{me.usuario}</td></tr>
+                    <tr><td style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Perfil</td><td><RoleBadge $role={me.role}>{ROLE_LABELS[me.role] || me.role}</RoleBadge></td></tr>
+                    <tr><td style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Matrícula</td><td>{me.employee_id || '—'}</td></tr>
+                    <tr><td style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Território</td><td>{me.territory || '—'}</td></tr>
+                    <tr><td style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Regional</td><td>{me.regional || '—'}</td></tr>
+                    <tr><td style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cargo</td><td>{me.title || '—'}</td></tr>
+                    <tr>
+                      <td style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Superior direto</td>
+                      <td>
+                        {manager ? (
+                          <>
+                            <strong>{manager.name}</strong>
+                            <RoleBadge $role={manager.role} style={{ marginLeft: 8 }}>{ROLE_LABELS[manager.role]}</RoleBadge>
+                          </>
+                        ) : (
+                          <span style={{ background: 'rgba(184,108,16,0.14)', color: '#7a4a00', padding: '3px 10px', borderRadius: '999px', fontSize: '0.76rem', fontWeight: 700 }}>
+                            Não vinculado
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </TableWrap>
+            </Card>
+          )}
 
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="responsavel">Responsável</label>
-            <input type="text" id="responsavel" name="responsavel" value={formData.responsavel} readOnly />
-          </div>
-          <div className="form-group">
-            <label htmlFor="dataInicio">Data de Início *</label>
-            <input type="date" id="dataInicio" name="dataInicio" value={formData.dataInicio} readOnly />
-          </div>
-          <div className="form-group">
-            <label htmlFor="dataFim">Data de Fim *</label>
-            <input type="date" id="dataFim" name="dataFim" value={formData.dataFim} readOnly />
-          </div>
-        </div>
-
-        <button type="submit" className="submit-button">Registrar FCA</button>
-      </form>
+          {me && !me.manager_id && (
+            <Card style={{ maxWidth: 600, background: 'rgba(184,108,16,0.08)', borderColor: 'rgba(184,108,16,0.3)' }}>
+              <p style={{ fontSize: '0.88rem', color: '#7a4a00', fontWeight: 600, lineHeight: 1.6 }}>
+                ⚠️ Você ainda não está vinculado a um superior. Entre em contato com seu supervisor ou administrador para solicitar o vínculo.
+              </p>
+            </Card>
+          )}
+        </MainShell>
+      </AppBg>
     </div>
   );
-}
+};
 
-export default InserirFca;
+export default FcaViewer;
