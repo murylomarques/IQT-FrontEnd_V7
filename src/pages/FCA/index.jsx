@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  FcaGlobal, AppBg, LoginWrap, LoginHero, LoginCard, LoginForm, LoginBtn,
-  Field, Label, Input,
+  FcaGlobal, LoginShell, LoginHero, LoginCard, LoginForm, LoginBtn,
+  Fld, Lbl, Inp,
 } from './theme';
 import { fcaStorage, fcaFetch, getRedirectByRole } from './api';
 
@@ -42,66 +42,63 @@ const FcaLogin = () => {
   };
 
   return (
-    <div className="fca-root">
+    <LoginShell>
       <FcaGlobal />
-      <AppBg>
-        <LoginWrap>
-          <LoginHero>
-            <div className="hero-kicker">Gestão de Estrutura</div>
-            <div className="hero-brand">GH · FCA</div>
-            <div className="hero-title">Controle quem está abaixo de cada nível.</div>
-            <div className="hero-desc">
-              Gerencie a estrutura de equipes com janela mensal configurável,
-              workflow de aprovação e hierarquia completa por perfil de acesso.
-            </div>
-            <div className="hero-chips">
-              <span className="chip">Hierarquia</span>
-              <span className="chip">Vínculos</span>
-              <span className="chip">Janela Mensal</span>
-              <span className="chip">Aprovações</span>
-              <span className="chip">CSV Import</span>
-            </div>
-          </LoginHero>
 
-          <LoginCard>
-            <div className="card-brand">GH · FCA</div>
-            <div className="card-kicker">Acesso corporativo seguro</div>
+      <LoginHero>
+        <div className="kicker">Gestão de Estrutura</div>
+        <div className="brand">GH · FCA</div>
+        <div className="headline">Controle quem está abaixo de cada nível.</div>
+        <div className="desc">
+          Gerencie a estrutura de equipes com janela mensal configurável,
+          workflow de aprovação e hierarquia completa por perfil de acesso.
+        </div>
+        <div className="chips">
+          <span className="chip">Hierarquia</span>
+          <span className="chip">Vínculos</span>
+          <span className="chip">Janela Mensal</span>
+          <span className="chip">Aprovações</span>
+          <span className="chip">CSV Import</span>
+        </div>
+      </LoginHero>
 
-            <LoginForm onSubmit={handleSubmit} noValidate>
-              <Field>
-                <Label htmlFor="usuario">Usuário ou e-mail</Label>
-                <Input
-                  id="usuario"
-                  type="text"
-                  value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
-                  placeholder="seu.usuario"
-                  disabled={loading}
-                  autoComplete="username"
-                />
-              </Field>
+      <LoginCard>
+        <div className="logo">GH · FCA</div>
+        <div className="sub">Acesso corporativo seguro</div>
 
-              <Field>
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={loading}
-                  autoComplete="current-password"
-                />
-              </Field>
+        <LoginForm onSubmit={handleSubmit} noValidate>
+          <Fld>
+            <Lbl htmlFor="usuario">Usuário ou e-mail</Lbl>
+            <Inp
+              id="usuario"
+              type="text"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              placeholder="seu.usuario"
+              disabled={loading}
+              autoComplete="username"
+            />
+          </Fld>
 
-              <LoginBtn type="submit" disabled={loading}>
-                {loading ? 'Entrando...' : 'Entrar'}
-              </LoginBtn>
-            </LoginForm>
-          </LoginCard>
-        </LoginWrap>
-      </AppBg>
-    </div>
+          <Fld>
+            <Lbl htmlFor="password">Senha</Lbl>
+            <Inp
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              disabled={loading}
+              autoComplete="current-password"
+            />
+          </Fld>
+
+          <LoginBtn type="submit" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
+          </LoginBtn>
+        </LoginForm>
+      </LoginCard>
+    </LoginShell>
   );
 };
 

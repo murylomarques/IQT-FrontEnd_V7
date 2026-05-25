@@ -24,12 +24,17 @@ import Cadastros from './pages/Cadastros';
 import ResolverQualidade from './pages/ResolverQualidade';
 import Agenda from './pages/Agenda';
 import VistoriaSeguranca from './pages/VistoriaSeguranca';
-import Fcalogin from './pages/FCA';
-
+// GH — Gestão de Hierarquia
+import GhLogin from './pages/FCA';
 import DashboardAdm from './pages/DashboardAdm';
 import DashboardSupervisor from './pages/DashboardSupervisor';
 import DashboardCoordenador from './pages/DashboardCoordenador';
 import InserirFca from './pages/InserirFca';
+
+// FCA — Avaliação de Campo
+import FcafLogin from './pages/FCAF';
+import DashboardFcaAdmin from './pages/DashboardFcaAdmin';
+import DashboardFcaSupervisor from './pages/DashboardFcaSupervisor';
 import Mensagens from './pages/Mensagens';
 import GlobalNotifier from './components/GlobalNotifier';
 
@@ -153,33 +158,17 @@ function App() {
 
 
 
-               {/* --- NOVAS ROTAS PARA OS DASHBOARDS FCA --- */}
-            <Route
-              path="/dashboard/adm"
-              element={
-                  <DashboardAdm />
-               
-              }
-            />
-             <Route
-              path="/dashboard/supervisor"
-              element={
-                  <DashboardSupervisor />
-                
-              }
-            />
-             <Route
-              path="/dashboard/coordenador"
-              element={
-                  <DashboardCoordenador />
+            {/* ── GH — Gestão de Hierarquia ── */}
+            <Route path="/login/GH"                element={<GhLogin />} />
+            <Route path="/dashboard/gh-adm"        element={<DashboardAdm />} />
+            <Route path="/dashboard/gh-supervisor"  element={<DashboardSupervisor />} />
+            <Route path="/dashboard/gh-coordenador" element={<DashboardCoordenador />} />
+            <Route path="/dashboard/gh-viewer"      element={<InserirFca />} />
 
-              }
-            />
-            <Route path="/dashboard/inserir-fca" element={
-                <InserirFca />
-            } />
-
-            <Route path="/login/FCA" element={ <Fcalogin />} />
+            {/* ── FCA — Avaliação de Campo ── */}
+            <Route path="/login/FCA"                element={<FcafLogin />} />
+            <Route path="/dashboard/fca-admin"      element={<DashboardFcaAdmin />} />
+            <Route path="/dashboard/fca-supervisor"  element={<DashboardFcaSupervisor />} />
 
 
 

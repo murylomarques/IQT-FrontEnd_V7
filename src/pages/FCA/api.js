@@ -1,5 +1,5 @@
 const BASE = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
-const PREFIX = 'FCA';
+const PREFIX = 'GH';
 
 export const fcaStorage = {
   get: (key) => localStorage.getItem(`${PREFIX}-${key}`),
@@ -39,8 +39,8 @@ export const ROLE_LABELS = {
 };
 
 export const getRedirectByRole = (role = '') => {
-  if (role === 'admin')       return '/dashboard/adm';
-  if (role === 'coordenacao') return '/dashboard/coordenador';
-  if (role === 'supervisao')  return '/dashboard/supervisor';
-  return '/dashboard/inserir-fca';
+  if (role === 'admin')       return '/dashboard/gh-adm';
+  if (role === 'coordenacao') return '/dashboard/gh-coordenador';
+  if (role === 'supervisao')  return '/dashboard/gh-supervisor';
+  return '/dashboard/gh-viewer';
 };

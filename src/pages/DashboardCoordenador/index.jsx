@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  FcaGlobal, AppBg, Topbar, BrandWrap, BrandCode, BrandText, SessionBox,
-  MainShell, AppLayout, Sidebar, NavBtn, ContentShell,
-  PageTitle, Card, CardTitle, FormGrid, Field, Label, Select, Btn,
-  TableWrap, Table, RoleBadge, WindowBadge, MetricsGrid, MiniCard, EmptyState,
+  FcaGlobal, FcaWrap, Topbar, BrandRow, BrandLogo, BrandMeta, SessionPill,
+  Shell, AppLayout, SideNav, NavBtn, ContentArea,
+  PageTitle, Card, CardLabel, FGrid, Fld, Lbl, Sel, Btn,
+  TblWrap, Tbl, RBadge, WinBadge, MetricsRow, Metric, Empty,
 } from '../FCA/theme';
 import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
 
@@ -25,7 +25,7 @@ const DashboardCoordenador = () => {
   const [loading,      setLoading]  = useState(false);
 
   useEffect(() => {
-    if (!fcaStorage.get('token') || role !== 'coordenacao') navigate('/login/FCA');
+    if (!fcaStorage.get('token') || role !== 'coordenacao') navigate('/login/GH');
   }, [navigate, role]);
 
   const loadData = useCallback(async () => {
@@ -64,146 +64,153 @@ const DashboardCoordenador = () => {
     catch (err) { toast.error(err.message); }
   };
 
-  const logout = () => { fcaStorage.clear(); navigate('/login/FCA'); };
+  const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
   return (
-    <div className="fca-root">
+    <FcaWrap>
       <FcaGlobal />
-      <AppBg>
-        <Topbar>
-          <BrandWrap>
-            <BrandCode>GH</BrandCode>
-            <BrandText>
-              <div className="brand-title">FCA</div>
-              <div className="brand-sub">Gestão de Hierarquia por Perfil</div>
-            </BrandText>
-          </BrandWrap>
-          <SessionBox>
-            <div>
-              <div className="session-name">{name}</div>
-              <div className="session-role">{ROLE_LABELS[role] || role}</div>
-            </div>
-            <Btn $variant="outline" className="btn-sm" onClick={logout}>Sair</Btn>
-          </SessionBox>
-        </Topbar>
+      <Topbar>
+        <BrandRow>
+          <BrandLogo>GH</BrandLogo>
+          <BrandMeta>
+            <div className="title">FCA</div>
+            <div className="sub">Gestão de Hierarquia por Perfil</div>
+          </BrandMeta>
+        </BrandRow>
+        <SessionPill>
+          <div>
+            <div className="sname">{name}</div>
+            <div className="srole">{ROLE_LABELS[role] || role}</div>
+          </div>
+          <Btn $v="outline" className="sm" onClick={logout}>Sair</Btn>
+        </SessionPill>
+      </Topbar>
 
-        <MainShell>
-          <AppLayout>
-            <Sidebar>
-              {TABS.map((t) => (
-                <NavBtn key={t} $active={tab === t} onClick={() => setTab(t)}>{t}</NavBtn>
-              ))}
-            </Sidebar>
+      <Shell>
+        <AppLayout>
+          <SideNav>
+            {TABS.map((t) => (
+              <NavBtn key={t} $active={tab === t} onClick={() => setTab(t)}>{t}</NavBtn>
+            ))}
+          </SideNav>
 
-            <ContentShell>
-              {/* ── MINHA EQUIPE ── */}
-              {tab === 'Minha Equipe' && (
-                <>
-                  <PageTitle>Minha <span>Equipe</span></PageTitle>
+          <ContentArea>
+            {/* ── MINHA EQUIPE ── */}
+            {tab === 'Minha Equipe' && (
+              <>
+                <PageTitle>Minha <em>Equipe</em></PageTitle>
 
-                  <MetricsGrid>
-                    <MiniCard>
-                      <div className="mini-label">Supervisores</div>
-                      <span className="mini-value">{subordinates.length}</span>
-                    </MiniCard>
-                    <MiniCard>
-                      <div className="mini-label">Técnicos (diretos)</div>
-                      <span className="mini-value">{totalTecnicos}</span>
-                    </MiniCard>
-                    <MiniCard>
-                      <div className="mini-label">Disponíveis p/ vínculo</div>
-                      <span className="mini-value">{available.length}</span>
-                    </MiniCard>
-                  </MetricsGrid>
+                <MetricsRow>
+                  <Metric>
+                    <div className="label">Supervisores</div>
+                    <div className="value">{subordinates.length}</div>
+                  </Metric>
+                  <Metric>
+                    <div className="label">Técnicos (diretos)</div>
+                    <div className="value">{totalTecnicos}</div>
+                  </Metric>
+                  <Metric>
+                    <div className="label">Disponíveis p/ vínculo</div>
+                    <div className="value">{available.length}</div>
+                  </Metric>
+                </MetricsRow>
 
+                {winData && (
+                  <div style={{ marginBottom: '1.1rem' }}>
+                    <WinBadge $open={winData.status.is_open}>
+                      <span className="dot" />
+                      {winData.status.is_open
+                        ? `Janela aberta — dias ${winData.config.start_day} a ${winData.config.end_day}`
+                        : `Janela fechada — abre dia ${winData.config.start_day}`}
+                    </WinBadge>
+                  </div>
+                )}
+
+                <Card>
+                  <CardLabel>Supervisores vinculados a você</CardLabel>
+                  <TblWrap style={{ marginTop: '0.8rem' }}>
+                    <Tbl>
+                      <thead>
+                        <tr>
+                          <th>Nome</th><th>Matrícula</th><th>Perfil</th>
+                          <th>Território</th><th>Técnicos</th><th>Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subordinates.map((u) => (
+                          <tr key={u.id}>
+                            <td><strong>{u.name}</strong></td>
+                            <td style={{ color: '#9a948f' }}>{u.employee_id || '—'}</td>
+                            <td><RBadge $r={u.role}>{ROLE_LABELS[u.role] || u.role}</RBadge></td>
+                            <td>{u.territory || '—'}</td>
+                            <td>
+                              <span style={{ background: 'rgba(47,122,63,0.14)', color: '#1a5028', borderRadius: '999px', padding: '2px 10px', fontSize: '0.76rem', fontWeight: 700 }}>
+                                {u.subordinates?.length || 0} técnico{(u.subordinates?.length || 0) !== 1 ? 's' : ''}
+                              </span>
+                            </td>
+                            <td>
+                              <Btn $v="danger" className="sm" onClick={() => handleUnlink(u.id)}>Desvincular</Btn>
+                            </td>
+                          </tr>
+                        ))}
+                        {subordinates.length === 0 && (
+                          <tr>
+                            <td colSpan={6}>
+                              <Empty><div className="icon">👥</div>Nenhum supervisor vinculado ainda.</Empty>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </Tbl>
+                  </TblWrap>
+                </Card>
+              </>
+            )}
+
+            {/* ── VINCULAR ── */}
+            {tab === 'Vincular' && (
+              <>
+                <PageTitle>Vincular <em>Supervisor</em></PageTitle>
+                <Card style={{ maxWidth: 500 }}>
+                  <CardLabel>Novo vínculo</CardLabel>
                   {winData && (
-                    <div style={{ marginBottom: '1.1rem' }}>
-                      <WindowBadge $open={winData.status.is_open}>
+                    <div style={{ margin: '0.8rem 0 1rem' }}>
+                      <WinBadge $open={winData.status.is_open}>
                         <span className="dot" />
-                        {winData.status.is_open
-                          ? `Janela aberta — dias ${winData.config.start_day} a ${winData.config.end_day}`
-                          : `Janela fechada — abre dia ${winData.config.start_day}`}
-                      </WindowBadge>
+                        {winData.status.is_open ? 'Janela aberta — vínculo imediato' : 'Janela fechada — enviará para aprovação'}
+                      </WinBadge>
                     </div>
                   )}
-
-                  <Card>
-                    <CardTitle>Supervisores vinculados a você</CardTitle>
-                    <TableWrap>
-                      <Table>
-                        <thead><tr><th>Nome</th><th>Matrícula</th><th>Perfil</th><th>Território</th><th>Técnicos</th><th>Ação</th></tr></thead>
-                        <tbody>
-                          {subordinates.map((u) => (
-                            <tr key={u.id}>
-                              <td><strong>{u.name}</strong></td>
-                              <td style={{ color: 'var(--text-muted)' }}>{u.employee_id || '—'}</td>
-                              <td><RoleBadge $role={u.role}>{ROLE_LABELS[u.role] || u.role}</RoleBadge></td>
-                              <td>{u.territory || '—'}</td>
-                              <td>
-                                <span style={{ background: 'rgba(47,122,63,0.14)', color: '#1a5028', borderRadius: '999px', padding: '2px 10px', fontSize: '0.76rem', fontWeight: 700 }}>
-                                  {u.subordinates?.length || 0} técnico{(u.subordinates?.length || 0) !== 1 ? 's' : ''}
-                                </span>
-                              </td>
-                              <td>
-                                <Btn $variant="danger" className="btn-sm" onClick={() => handleUnlink(u.id)}>Desvincular</Btn>
-                              </td>
-                            </tr>
+                  <form onSubmit={handleLink}>
+                    <FGrid style={{ gridTemplateColumns: '1fr' }}>
+                      <Fld>
+                        <Lbl>Supervisor disponível *</Lbl>
+                        <Sel value={linkChild} onChange={(e) => setLinkChild(e.target.value)}>
+                          <option value="">Selecione um supervisor...</option>
+                          {available.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}{s.territory ? ` — ${s.territory}` : ''}
+                            </option>
                           ))}
-                          {subordinates.length === 0 && (
-                            <tr><td colSpan={6}><EmptyState><div className="empty-icon">👥</div>Nenhum supervisor vinculado ainda.</EmptyState></td></tr>
-                          )}
-                        </tbody>
-                      </Table>
-                    </TableWrap>
-                  </Card>
-                </>
-              )}
-
-              {/* ── VINCULAR ── */}
-              {tab === 'Vincular' && (
-                <>
-                  <PageTitle>Vincular <span>Supervisor</span></PageTitle>
-                  <Card style={{ maxWidth: 500 }}>
-                    <CardTitle>Novo vínculo</CardTitle>
-                    {winData && (
-                      <div style={{ marginBottom: '1rem' }}>
-                        <WindowBadge $open={winData.status.is_open}>
-                          <span className="dot" />
-                          {winData.status.is_open ? 'Janela aberta — vínculo imediato' : 'Janela fechada — enviará para aprovação'}
-                        </WindowBadge>
-                      </div>
-                    )}
-                    <form onSubmit={handleLink}>
-                      <FormGrid style={{ gridTemplateColumns: '1fr' }}>
-                        <Field>
-                          <Label>Supervisor disponível *</Label>
-                          <Select value={linkChild} onChange={(e) => setLinkChild(e.target.value)}>
-                            <option value="">Selecione um supervisor...</option>
-                            {available.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.name}{s.territory ? ` — ${s.territory}` : ''}
-                              </option>
-                            ))}
-                          </Select>
-                        </Field>
-                      </FormGrid>
-                      <Btn type="submit" disabled={loading || !linkChild}>
-                        {loading ? 'Salvando...' : winData?.status?.is_open ? 'Vincular agora' : 'Enviar solicitação'}
-                      </Btn>
-                    </form>
-                    {available.length === 0 && (
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
-                        Nenhum supervisor disponível para vínculo no momento.
-                      </p>
-                    )}
-                  </Card>
-                </>
-              )}
-            </ContentShell>
-          </AppLayout>
-        </MainShell>
-      </AppBg>
-    </div>
+                        </Sel>
+                      </Fld>
+                    </FGrid>
+                    <Btn type="submit" disabled={loading || !linkChild}>
+                      {loading ? 'Salvando...' : winData?.status?.is_open ? 'Vincular agora' : 'Enviar solicitação'}
+                    </Btn>
+                  </form>
+                  {available.length === 0 && (
+                    <p style={{ fontSize: '0.8rem', color: '#9a948f', marginTop: '0.75rem' }}>
+                      Nenhum supervisor disponível para vínculo no momento.
+                    </p>
+                  )}
+                </Card>
+              </>
+            )}
+          </ContentArea>
+        </AppLayout>
+      </Shell>
+    </FcaWrap>
   );
 };
 
