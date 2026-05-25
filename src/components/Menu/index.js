@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { SidebarContainer, LogoContainer, NavList, NavItem, ToggleButton } from './styles';
-import { FiGrid, FiSettings, FiBarChart2, FiChevronLeft, FiCalendar, FiClock, FiBook, FiUserPlus, FiMessageCircle, FiCloud } from 'react-icons/fi';
+import { FiGrid, FiSettings, FiBarChart2, FiChevronLeft, FiCalendar, FiClock, FiBook, FiUserPlus, FiMessageCircle } from 'react-icons/fi';
 
 const Menu = ({ isExpanded, setIsExpanded }) => {
   const { user } = useAuth();
@@ -40,15 +40,8 @@ const Menu = ({ isExpanded, setIsExpanded }) => {
           </NavLink>
         </NavItem>
 
-        <NavItem isExpanded={isExpanded}>
-          <NavLink to="/monitor-clima" title="Monitor Clima">
-            <FiCloud />
-            <span>Monitor Clima</span>
-          </NavLink>
-        </NavItem>
-
         {/* Itens visíveis apenas para 'admin' e 'fiscal' */}
-        {(user?.cargo_id === 1 || user?.role === 'fiscal') && (
+        {(user?.role === 'admin' || user?.role === 'fiscal') && (
           <>
             <NavItem isExpanded={isExpanded}>
               <NavLink to="/agendamentos" title="Agendamentos">
@@ -81,7 +74,7 @@ const Menu = ({ isExpanded, setIsExpanded }) => {
         )}
 
         {/* Item visível APENAS para 'admin' */}
-        {user?.cargo_id === 1 && (
+        {user?.role === 'admin' && (
           <NavItem isExpanded={isExpanded}>
             <NavLink to="/admin" title="Administração">
               <FiSettings />

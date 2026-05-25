@@ -40,15 +40,8 @@ useEffect(() => {
         try {
             const response = await apiFetch(`/api/agenda-gantt?date=${selectedDate}`);
             
-            // --- LOG 1: INSPECIONE A RESPOSTA BRUTA DA API ---
-            // Isso vai mostrar exatamente o que o backend enviou.
-            // Verifique no console do navegador se as tarefas dentro de 'response.tasks' 
-            // possuem o campo 'statusAgendamento'.
-            console.log('API Response (Dados Brutos):', response);
-            // ----------------------------------------------------
-
             setTechnicians(response.resources);
-            
+
             const formattedTasks = response.tasks.map(task => {
                 const [hour, minute] = task.hora_agendamento.split(':');
                 return { 
@@ -58,17 +51,10 @@ useEffect(() => {
                 };
             });
 
-            // --- LOG 2: INSPECIONE OS DADOS FORMATADOS ---
-            // Isso vai mostrar o que está prestes a ser salvo no estado.
-            // Verifique se as tarefas aqui ainda possuem o campo 'statusAgendamento'.
-            console.log('Formatted Tasks (Antes de Salvar no Estado):', formattedTasks);
-            // ------------------------------------------------
-
             setScheduleData(formattedTasks);
 
         } catch (error) {
             toast.error("Erro ao carregar a agenda.");
-            console.error("Falha ao buscar dados da agenda:", error); // Adicionado log de erro
         } finally {
             setIsLoading(false);
         }
@@ -161,7 +147,6 @@ useEffect(() => {
             handleCloseModal();
         } catch (error) {
             toast.error("Erro ao reagendar a tarefa.");
-            console.error("Falha no reagendamento:", error);
         }
     };
     

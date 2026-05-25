@@ -50,7 +50,6 @@ const ResolverQualidade = () => {
 
         } catch (error) {
             toast.error("Erro ao buscar vistoria.");
-            console.error(error);
             navigate('/backlog');
         } finally {
             setIsLoading(false);

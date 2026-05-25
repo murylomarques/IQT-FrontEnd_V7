@@ -8,7 +8,7 @@ import { theme } from './styles/theme';
 
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
-import MonitorRoute from './routes/MonitorRoute';
+import { useAuth } from './contexts/AuthContext';
 
 import VistoriaDetalhe from './pages/VistoriaDetalhe';
 // Importação das páginas
@@ -31,9 +31,12 @@ import DashboardSupervisor from './pages/DashboardSupervisor';
 import DashboardCoordenador from './pages/DashboardCoordenador';
 import InserirFca from './pages/InserirFca';
 import Mensagens from './pages/Mensagens';
-import MonitorClima from './pages/MonitorClima';
-import MonitorCidadeDetalhe from './pages/MonitorClima/CidadeDetalhe';
 import GlobalNotifier from './components/GlobalNotifier';
+
+const NotFound = () => {
+  const { user } = useAuth();
+  return <Navigate to={user ? '/dashboard' : '/login'} />;
+};
 
 function App() {
   return (
@@ -148,23 +151,6 @@ function App() {
               }
             />
 
-            <Route
-              path="/monitor-clima"
-              element={
-                <MonitorRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
-                  <MonitorClima />
-                </MonitorRoute>
-              }
-            />
-            <Route
-              path="/monitor-clima/cidade/:nome"
-              element={
-                <MonitorRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
-                  <MonitorCidadeDetalhe />
-                </MonitorRoute>
-              }
-            />
-
 
 
                {/* --- NOVAS ROTAS PARA OS DASHBOARDS FCA --- */}
@@ -198,8 +184,8 @@ function App() {
 
 
 
-            {/* Rota padrão para redirecionar para o login se nenhuma outra corresponder */}
-            <Route path="*" element={<Navigate to="/login" />} />
+            {/* Rota padrão: logado vai para dashboard, deslogado vai para login */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
       </Router>

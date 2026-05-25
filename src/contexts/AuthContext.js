@@ -97,8 +97,8 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('desktopUser');
       }
     } catch (error) {
-        console.error("Falha ao processar dados do usuário:", error);
         localStorage.removeItem('desktopUser');
+        toast.error('Sua sessão anterior estava corrompida. Faça login novamente.');
     } finally {
         setLoading(false);
     }
@@ -130,7 +130,11 @@ export const AuthProvider = ({ children }) => {
       const expirationTime = Date.now() + SESSION_DURATION;
       const apiUser = response.data.user;
 
-      const userRole = ROLE_MAP[apiUser.cargo_id] || 'unknown';
+      const userRole = ROLE_MAP[apiUser.cargo_id];
+      if (!userRole) {
+        toast.error('Perfil de acesso não reconhecido. Contate o administrador.');
+        throw new Error(`cargo_id não mapeado: ${apiUser.cargo_id}`);
+      }
 
       const userData = {
         ...apiUser,

@@ -85,7 +85,6 @@ const AgendamentoDetalhe = () => {
         const data = await apiFetch('/api/fiscais');
         setFiscaisList(data || []);
       } catch (error) {
-        console.error("Erro ao buscar a lista de fiscais:", error);
         toast.error("Não foi possível carregar a lista de fiscais.");
       } finally {
         setIsFiscaisLoading(false);
@@ -102,7 +101,6 @@ const AgendamentoDetalhe = () => {
         const response = await apiFetch(`/api/atendimentos/${id}`);
         setAppointment(response);
       } catch (error) {
-        console.error("Erro ao buscar agendamento:", error);
         toast.error('Agendamento não encontrado ou falha ao carregar os dados.');
         navigate('/agendamentos');
       } finally {
@@ -128,7 +126,6 @@ const AgendamentoDetalhe = () => {
           setFiscalAgenda(Array.isArray(data) ? data : []);
         }
       } catch (error) {
-        console.error("Erro ao carregar agenda do fiscal:", error);
         toast.error("Não foi possível carregar a agenda do fiscal.");
       } finally {
         if (isMounted) {
@@ -197,8 +194,6 @@ const AgendamentoDetalhe = () => {
       navigate('/agendamentos');
 
     } catch (error) {
-      console.error("Erro ao salvar agendamento:", error);
-
       const apiErrors = error?.response?.data?.errors || error?.errors;
       if (apiErrors) {
         const errorMessages = Object.values(apiErrors).flat().join('\n');

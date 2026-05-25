@@ -1,7 +1,16 @@
 import { Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
 
 // Agora a prop se chamará 'allowedRoles' (plural) para ficar mais claro
+const AccessDeniedRedirect = () => {
+  useEffect(() => {
+    toast.warn('Você não tem permissão para acessar esta página.');
+  }, []);
+  return <Navigate to="/dashboard" />;
+};
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
@@ -19,7 +28,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   // ...verifique se a permissão do usuário (user.role) está INCLUÍDA na lista de permissões permitidas.
   // Se NÃO estiver incluída, redirecione.
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" />;
+    return <AccessDeniedRedirect />;
   }
 
   // 3. Se o usuário estiver logado e tiver a permissão necessária (ou se a rota não exigir permissão),

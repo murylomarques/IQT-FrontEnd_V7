@@ -104,7 +104,6 @@ const Cadastros = () => {
 
       if (!data || data.length === 0) toast.info('Nenhuma vistoria de segurança encontrada no período.');
     } catch (error) {
-      console.error('Erro ao buscar vistorias de segurança:', error);
       toast.error('Falha ao buscar vistorias de segurança.');
     } finally {
       setIsSearching(false);
@@ -134,7 +133,6 @@ const Cadastros = () => {
 
       toast.success(`Laudo #${vistoriaId} invalidado!`);
     } catch (error) {
-      console.error(error);
       toast.error(error?.response?.data?.message || error?.message || 'Erro ao invalidar laudo.');
     } finally {
       setInvalidandoId(null);
@@ -183,7 +181,6 @@ const Cadastros = () => {
       pdf.save(`vistoria_seguranca_${vistoriaComUrl.id}.pdf`);
       toast.success('PDF gerado com sucesso!');
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
       toast.error(error?.message || 'Ocorreu um erro ao gerar o PDF.');
     } finally {
       setPdfSegurancaData(null);
@@ -233,7 +230,6 @@ const Cadastros = () => {
 
       toast.success('CSV de Segurança exportado com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar CSV de Segurança:', error);
       toast.error('Ocorreu um erro ao exportar o CSV de Segurança.');
     } finally {
       setIsExporting(false);
@@ -272,7 +268,6 @@ const Cadastros = () => {
 
       toast.success('CSV de Qualidade exportado com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar CSV de Qualidade:', error);
       toast.error('Ocorreu um erro ao exportar o CSV de Qualidade.');
     } finally {
       setIsExporting(false);
@@ -324,7 +319,6 @@ const Cadastros = () => {
       saveAs(content, `Vistorias_${startDate}_a_${endDate}.zip`);
       toast.success('Exportação de PDFs concluída!');
     } catch (error) {
-      console.error('Erro na exportação de PDFs:', error);
       toast.error('Ocorreu um erro durante a exportação dos PDFs.');
     } finally {
       setIsExporting(false);
