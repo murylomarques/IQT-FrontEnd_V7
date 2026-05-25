@@ -13,7 +13,7 @@ export const fcafFetch = async (path, options = {}) => {
   const token = fcafStorage.get('token');
   const isFormData = options.body instanceof FormData;
 
-  const res = await fetch(`${BASE}/api${path}`, {
+  const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
