@@ -48,6 +48,26 @@ const DashboardFcaAdmin = () => {
 
   const logout = () => { fcafStorage.clear(); navigate('/login/FCA'); };
 
+  const downloadModelo = () => {
+    const rows = [
+      ['Mes', 'mai/26', 'mai/26', 'mai/26', 'mai/26'],
+      ['Nome', 'Prod_bruta', 'Revisita', 'Tec1', 'Certificado'],
+      ['JOAO DA SILVA', '2.50', '0.14', '0.83', 'Sim'],
+      ['MARIA SANTOS', '1.80', '0.10', '0.75', 'Não'],
+      ['PEDRO OLIVEIRA', '3.20', '0.05', '0.90', 'Não'],
+      ['ANA PAULA FERREIRA', '2.10', '0.20', '0.78', 'Sim'],
+      ['CARLOS MENDES', '1.50', '', '0.65', '-'],
+    ];
+    const csv  = rows.map((r) => r.join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'modelo_base_fca.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleUpload = async (e) => {
     const file = e.target.files?.[0]; if (!file) return;
     const form = new FormData(); form.append('file', file);
@@ -173,15 +193,66 @@ const DashboardFcaAdmin = () => {
               <>
                 <PageTitle>Importar <em>Base</em></PageTitle>
 
+                {/* ── Formato esperado ── */}
+                <Card>
+                  <CardRow>
+                    <CardLabel>Formato esperado da planilha</CardLabel>
+                    <Btn $v="ghost" className="sm" onClick={downloadModelo}>↓ Baixar modelo .csv</Btn>
+                  </CardRow>
+
+                  <p style={{ fontSize: '0.8rem', color: '#5a5551', margin: '0.5rem 0 0.9rem', lineHeight: 1.6 }}>
+                    A planilha deve ter exatamente 5 colunas na ordem abaixo. A primeira linha pode conter o mês (ex: <code style={{ background: 'rgba(53,48,45,.08)', padding: '1px 5px', borderRadius: 4 }}>mai/26</code>)
+                    e a linha com os cabeçalhos deve ter <strong>Nome</strong> na primeira coluna.
+                    Coluna <strong>Certificado</strong> aceita: <code style={{ background: 'rgba(53,48,45,.08)', padding: '1px 5px', borderRadius: 4 }}>Sim</code>, <code style={{ background: 'rgba(53,48,45,.08)', padding: '1px 5px', borderRadius: 4 }}>Não</code> ou <code style={{ background: 'rgba(53,48,45,.08)', padding: '1px 5px', borderRadius: 4 }}>-</code>.
+                  </p>
+
+                  <TblWrap>
+                    <Tbl style={{ minWidth: 0 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ background: 'rgba(244,186,68,.18)' }}>Nome</th>
+                          <th style={{ background: 'rgba(244,186,68,.18)' }}>Prod_bruta</th>
+                          <th style={{ background: 'rgba(244,186,68,.18)' }}>Revisita</th>
+                          <th style={{ background: 'rgba(244,186,68,.18)' }}>Tec1</th>
+                          <th style={{ background: 'rgba(244,186,68,.18)' }}>Certificado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>JOAO DA SILVA</td>
+                          <td style={{ color: '#9a948f' }}>2.50</td>
+                          <td style={{ color: '#9a948f' }}>0.14</td>
+                          <td style={{ color: '#9a948f' }}>0.83</td>
+                          <td><span style={{ background: 'rgba(47,122,63,.14)', color: '#1a5028', padding: '1px 8px', borderRadius: '999px', fontSize: '0.74rem', fontWeight: 700 }}>Sim</span></td>
+                        </tr>
+                        <tr>
+                          <td>MARIA SANTOS</td>
+                          <td style={{ color: '#9a948f' }}>1.80</td>
+                          <td style={{ color: '#9a948f' }}>0.10</td>
+                          <td style={{ color: '#9a948f' }}>0.75</td>
+                          <td><span style={{ background: 'rgba(53,48,45,.1)', color: '#5a5551', padding: '1px 8px', borderRadius: '999px', fontSize: '0.74rem', fontWeight: 700 }}>Não</span></td>
+                        </tr>
+                        <tr>
+                          <td>CARLOS MENDES</td>
+                          <td style={{ color: '#9a948f' }}>1.50</td>
+                          <td style={{ color: '#9a948f' }}>—</td>
+                          <td style={{ color: '#9a948f' }}>0.65</td>
+                          <td><span style={{ background: 'rgba(53,48,45,.1)', color: '#5a5551', padding: '1px 8px', borderRadius: '999px', fontSize: '0.74rem', fontWeight: 700 }}>-</span></td>
+                        </tr>
+                      </tbody>
+                    </Tbl>
+                  </TblWrap>
+                </Card>
+
+                {/* ── Upload ── */}
                 <Card style={{ maxWidth: 540 }}>
-                  <CardLabel>Novo Período</CardLabel>
-                  <p style={{ fontSize: '0.84rem', color: '#5a5551', marginTop: '0.6rem', lineHeight: 1.65 }}>
-                    Faça upload da planilha xlsx com as colunas <strong>Nome</strong>, <strong>Prod_bruta</strong>, <strong>Revisita</strong>, <strong>Tec1</strong> e <strong>Certificado</strong>.
-                    O período será de <strong>25 dias</strong> a partir do upload. Períodos anteriores são desativados automaticamente.
+                  <CardLabel>Importar Nova Base</CardLabel>
+                  <p style={{ fontSize: '0.84rem', color: '#5a5551', marginTop: '0.5rem', lineHeight: 1.65 }}>
+                    Após o upload um novo período de <strong>25 dias</strong> será criado. Períodos anteriores são desativados automaticamente.
                   </p>
 
                   {period && !period.is_expired && (
-                    <Alert $t="warn" style={{ marginTop: '1rem' }}>
+                    <Alert $t="warn" style={{ marginTop: '0.9rem' }}>
                       ⚠️ Existe um período ativo ({period.mes}). Ao importar nova base o período atual será encerrado.
                     </Alert>
                   )}
