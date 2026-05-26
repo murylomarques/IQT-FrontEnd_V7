@@ -5,40 +5,36 @@ import Menu from '../../components/Menu';
 import { FiShield, FiUsers, FiActivity, FiServer, FiSettings, FiZap, FiLock } from 'react-icons/fi';
 
 import {
-  LayoutContainer,
-  ContentArea,
-  Header,
-  HeaderTitle,
-  UserProfile,
+  LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile,
 } from '../Dashboard/styles';
 
 import {
-  Hero,
-  HeroHeader,
-  HeroTitle,
-  HeroSubtitle,
-  StatGrid,
-  StatCard,
-  StatLabel,
-  StatValue,
-  StatDelta,
-  Grid,
-  Panel,
-  PanelHeader,
-  PanelTitle,
-  PanelSubtitle,
-  Badge,
-  Pill,
-  ActionGrid,
-  ActionCard,
-  StatusList,
-  StatusRow,
-  StatusDot,
-  ActivityList,
-  ActivityItem,
-  ActivityMeta,
-  SimpleTable,
+  Hero, HeroHeader, HeroTitle, HeroSubtitle,
+  StatGrid, StatCard, StatLabel, StatValue, StatDelta,
+  Grid, WideGrid, Panel, PanelHeader, PanelTitle, PanelSubtitle,
+  Badge, Pill,
+  ActionGrid, ActionCard, ActionIconWrap,
+  StatusList, StatusRow, StatusDot,
+  ActivityList, ActivityItem, ActivityMeta,
+  SimpleTable, TableActions, DetailBtn, ApproveBtn, RejectBtn,
+  ModalOverlay, ModalContent, ModalHeader, ModalCloseBtn,
+  ModalBody, ModalField, ObservacaoBox, ModalFooter,
+  ModalApproveBtn, ModalRejectBtn,
 } from './styles';
+
+const ACTIONS = [
+  { title: 'Gerenciar Usuários',    subtitle: 'Perfis, cargos e acessos',   icon: <FiUsers />,   color: '#2563eb', bg: '#eff6ff' },
+  { title: 'Segurança',             subtitle: 'Permissões e auditoria',      icon: <FiShield />,  color: '#7c3aed', bg: '#f5f3ff' },
+  { title: 'Automação',             subtitle: 'Regras e integrações',        icon: <FiZap />,     color: '#d97706', bg: '#fffbeb' },
+  { title: 'Configurações',         subtitle: 'Preferências do sistema',     icon: <FiSettings />, color: '#0891b2', bg: '#ecfeff' },
+];
+
+const STATUS_ITEMS = [
+  { label: 'API de Qualidade',        value: 'Operacional', tone: 'ok' },
+  { label: 'Serviço de Relatórios',   value: 'Operacional', tone: 'ok' },
+  { label: 'Sincronização Salesforce', value: 'Operacional', tone: 'ok' },
+  { label: 'Fila de Processamento',   value: 'Monitorando', tone: 'warning' },
+];
 
 const Admin = () => {
   const { user, logout, apiFetch } = useAuth();
@@ -53,20 +49,6 @@ const Admin = () => {
     pending_approvals: [],
   });
 
-  const actions = [
-    { title: 'Gerenciar usuários', subtitle: 'Perfis, cargos e acessos', icon: <FiUsers /> },
-    { title: 'Seguranca e compliance', subtitle: 'Permissoes e auditoria', icon: <FiShield /> },
-    { title: 'Automacao', subtitle: 'Regras e integracoes', icon: <FiZap /> },
-    { title: 'Configurações', subtitle: 'Preferências do sistema', icon: <FiSettings /> },
-  ];
-
-  const statusItems = [
-    { label: 'API de qualidade', value: 'Operacional', tone: 'ok' },
-    { label: 'Serviço de relatórios', value: 'Operacional', tone: 'ok' },
-    { label: 'Sincronização Salesforce', value: 'Operacional', tone: 'ok' },
-    { label: 'Fila de processamento', value: 'Monitorando', tone: 'warning' },
-  ];
-
   const fetchOverview = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -76,42 +58,20 @@ const Admin = () => {
         recent_activities: Array.isArray(data?.recent_activities) ? data.recent_activities : [],
         pending_approvals: Array.isArray(data?.pending_approvals) ? data.pending_approvals : [],
       });
-    } catch (error) {
+    } catch {
       toast.error('Não foi possível carregar o painel administrativo.');
     } finally {
       setIsLoading(false);
     }
   }, [apiFetch]);
 
-  useEffect(() => {
-    fetchOverview();
-  }, [fetchOverview]);
+  useEffect(() => { fetchOverview(); }, [fetchOverview]);
 
   const stats = useMemo(() => ([
-    {
-      label: 'Solicitações pendentes',
-      value: String(overview?.stats?.pending_access_requests ?? 0),
-      delta: 'Aguardando aprovação',
-      tone: 'down',
-    },
-    {
-      label: 'Itens reprovados',
-      value: String(overview?.stats?.reprovados ?? 0),
-      delta: 'Precisam de resposta',
-      tone: 'down',
-    },
-    {
-      label: 'Itens em análise',
-      value: String(overview?.stats?.em_analise ?? 0),
-      delta: 'Aguardando decisão',
-      tone: 'up',
-    },
-    {
-      label: 'Atividades recentes',
-      value: String(overview?.stats?.recent_activity_count ?? 0),
-      delta: 'Últimos eventos registrados',
-      tone: 'up',
-    },
+    { label: 'Solicitações Pendentes', value: String(overview?.stats?.pending_access_requests ?? 0), delta: 'Aguardando aprovação', tone: 'down' },
+    { label: 'Itens Reprovados',       value: String(overview?.stats?.reprovados ?? 0),              delta: 'Precisam de resposta', tone: 'down' },
+    { label: 'Itens em Análise',       value: String(overview?.stats?.em_analise ?? 0),              delta: 'Aguardando decisão',  tone: 'up'   },
+    { label: 'Atividades Recentes',    value: String(overview?.stats?.recent_activity_count ?? 0),   delta: 'Últimos eventos',     tone: 'up'   },
   ]), [overview]);
 
   const formatDate = (value) => {
@@ -161,7 +121,7 @@ const Admin = () => {
     try {
       const data = await apiFetch(`/api/admin/access-requests/${requestId}`);
       setSelectedApproval(data || null);
-    } catch (error) {
+    } catch {
       toast.error('Não foi possível carregar os detalhes da solicitação.');
     } finally {
       setIsDetailsLoading(false);
@@ -186,6 +146,7 @@ const Admin = () => {
           </UserProfile>
         </Header>
 
+        {/* ── Hero + KPIs ─────────────────────────────────────────────────── */}
         <Hero>
           <HeroHeader>
             <HeroTitle>Visão estratégica e governança operacional</HeroTitle>
@@ -205,19 +166,22 @@ const Admin = () => {
           </StatGrid>
         </Hero>
 
+        {/* ── Ações Rápidas + Status de Serviços ──────────────────────────── */}
         <Grid>
           <Panel>
             <PanelHeader>
               <div>
-                <PanelTitle>Ações rápidas</PanelTitle>
+                <PanelTitle>Ações Rápidas</PanelTitle>
                 <PanelSubtitle>Atalhos para operações essenciais</PanelSubtitle>
               </div>
               <Badge>Prioridades</Badge>
             </PanelHeader>
             <ActionGrid>
-              {actions.map((action) => (
+              {ACTIONS.map((action) => (
                 <ActionCard key={action.title} type="button">
-                  {action.icon}
+                  <ActionIconWrap color={action.color} bg={action.bg}>
+                    {action.icon}
+                  </ActionIconWrap>
                   <strong>{action.title}</strong>
                   <span>{action.subtitle}</span>
                 </ActionCard>
@@ -234,7 +198,7 @@ const Admin = () => {
               <FiServer />
             </PanelHeader>
             <StatusList>
-              {statusItems.map((item) => (
+              {STATUS_ITEMS.map((item) => (
                 <StatusRow key={item.label}>
                   <div>
                     <StatusDot tone={item.tone} />
@@ -247,12 +211,13 @@ const Admin = () => {
           </Panel>
         </Grid>
 
-        <Grid>
+        {/* ── Atividade Recente + Aprovações Críticas ──────────────────────── */}
+        <WideGrid>
           <Panel>
             <PanelHeader>
               <div>
-                <PanelTitle>Atividade recente</PanelTitle>
-                <PanelSubtitle>Operacoes e alertas mais recentes</PanelSubtitle>
+                <PanelTitle>Atividade Recente</PanelTitle>
+                <PanelSubtitle>Operações e alertas mais recentes</PanelSubtitle>
               </div>
               <FiActivity />
             </PanelHeader>
@@ -265,7 +230,7 @@ const Admin = () => {
                 <ActivityItem key={activity.id}>
                   <strong>{activity.description}</strong>
                   <ActivityMeta>
-                    {formatDate(activity.created_at)} • {activity.user || 'Sistema'} • {activity.action}
+                    {formatDate(activity.created_at)} &bull; {activity.user || 'Sistema'} &bull; {activity.action}
                   </ActivityMeta>
                 </ActivityItem>
               ))}
@@ -275,7 +240,7 @@ const Admin = () => {
           <Panel>
             <PanelHeader>
               <div>
-                <PanelTitle>Aprovações críticas</PanelTitle>
+                <PanelTitle>Aprovações Críticas</PanelTitle>
                 <PanelSubtitle>Solicitações aguardando decisão</PanelSubtitle>
               </div>
               <FiLock />
@@ -287,219 +252,152 @@ const Admin = () => {
                   <th>Solicitante</th>
                   <th>Email</th>
                   <th>Status</th>
-                  <th>Acoes</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
-                  <tr>
-                    <td colSpan="5">Carregando aprovações...</td>
-                  </tr>
+                  <tr><td colSpan="5">Carregando aprovações...</td></tr>
                 )}
                 {!isLoading && overview.pending_approvals.length === 0 && (
-                  <tr>
-                    <td colSpan="5">Nenhuma solicitação pendente.</td>
-                  </tr>
+                  <tr><td colSpan="5">Nenhuma solicitação pendente.</td></tr>
                 )}
                 {!isLoading && overview.pending_approvals.map((item) => (
                   <tr
                     key={item.id}
                     onClick={() => openApprovalDetails(item.id)}
-                    style={{ cursor: 'pointer' }}
-                    title="Clique para ver os detalhes da solicitação"
+                    title="Clique para ver os detalhes"
                   >
                     <td>#{item.id}</td>
                     <td>{item.nome}</td>
                     <td>{item.email}</td>
+                    <td><Pill tone="warning">Pendente</Pill></td>
                     <td>
-                      <Pill tone="warning">Pendente</Pill>
-                    </td>
-                    <td style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openApprovalDetails(item.id);
-                        }}
-                        style={{
-                          border: '1px solid #ddd',
-                          borderRadius: 8,
-                          padding: '6px 10px',
-                          cursor: 'pointer',
-                          background: '#fff',
-                          color: '#1f2937',
-                          fontWeight: 600,
-                        }}
-                      >
-                        Detalhes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleApprove(item.id);
-                        }}
-                        disabled={isApproving}
-                        style={{
-                          border: 'none',
-                          borderRadius: 8,
-                          padding: '6px 10px',
-                          cursor: 'pointer',
-                          background: '#16a34a',
-                          color: '#fff',
-                          fontWeight: 600,
-                        }}
-                      >
-                        Aprovar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleReject(item.id);
-                        }}
-                        disabled={isApproving}
-                        style={{
-                          border: 'none',
-                          borderRadius: 8,
-                          padding: '6px 10px',
-                          cursor: 'pointer',
-                          background: '#dc2626',
-                          color: '#fff',
-                          fontWeight: 600,
-                        }}
-                      >
-                        Rejeitar
-                      </button>
+                      <TableActions>
+                        <DetailBtn
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openApprovalDetails(item.id); }}
+                        >
+                          Detalhes
+                        </DetailBtn>
+                        <ApproveBtn
+                          type="button"
+                          disabled={isApproving}
+                          onClick={(e) => { e.stopPropagation(); handleApprove(item.id); }}
+                        >
+                          Aprovar
+                        </ApproveBtn>
+                        <RejectBtn
+                          type="button"
+                          disabled={isApproving}
+                          onClick={(e) => { e.stopPropagation(); handleReject(item.id); }}
+                        >
+                          Rejeitar
+                        </RejectBtn>
+                      </TableActions>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </SimpleTable>
           </Panel>
-        </Grid>
+        </WideGrid>
 
+        {/* ── Modal de Aprovação ───────────────────────────────────────────── */}
         {(selectedApproval || isDetailsLoading) && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.45)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999,
-              padding: 16,
-            }}
-            onClick={closeApprovalDetails}
-          >
-            <div
-              style={{
-                width: '100%',
-                maxWidth: 680,
-                background: '#fff',
-                borderRadius: 16,
-                padding: 20,
-                display: 'grid',
-                gap: 14,
-              }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, color: '#111827' }}>
-                  {isDetailsLoading
-                    ? 'Carregando detalhes...'
-                    : `Solicitacao #${selectedApproval?.id || ''}`}
-                </h3>
-                <button
+          <ModalOverlay onClick={closeApprovalDetails}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+
+              <ModalHeader>
+                <div>
+                  <h3>
+                    {isDetailsLoading
+                      ? 'Carregando detalhes...'
+                      : `Solicitação #${selectedApproval?.id || ''}`}
+                  </h3>
+                  {!isDetailsLoading && selectedApproval && (
+                    <div className="modal-meta">
+                      Solicitado em: {formatDate(selectedApproval.created_at)}
+                    </div>
+                  )}
+                </div>
+                <ModalCloseBtn
                   type="button"
                   onClick={closeApprovalDetails}
                   disabled={isApproving}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    fontSize: 20,
-                    cursor: 'pointer',
-                    lineHeight: 1,
-                  }}
                 >
-                  x
-                </button>
-              </div>
+                  &#10005;
+                </ModalCloseBtn>
+              </ModalHeader>
 
               {!isDetailsLoading && selectedApproval && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div><strong>Nome:</strong> {selectedApproval.nome || '-'}</div>
-                    <div><strong>Email:</strong> {selectedApproval.email || '-'}</div>
-                    <div><strong>Telefone:</strong> {selectedApproval.numero || '-'}</div>
-                    <div><strong>CPF:</strong> {selectedApproval.cpf || '-'}</div>
-                    <div><strong>Empresa:</strong> {selectedApproval.empresa?.nome || '-'}</div>
-                    <div><strong>Cargo:</strong> {selectedApproval.cargo?.nome || '-'}</div>
-                    <div><strong>Regional:</strong> {selectedApproval.regional?.nome || '-'}</div>
-                    <div><strong>Solicitado em:</strong> {formatDate(selectedApproval.created_at)}</div>
-                  </div>
+                  <ModalBody>
+                    <ModalField>
+                      <strong>Nome</strong>
+                      <span>{selectedApproval.nome || '—'}</span>
+                    </ModalField>
+                    <ModalField>
+                      <strong>Email</strong>
+                      <span>{selectedApproval.email || '—'}</span>
+                    </ModalField>
+                    <ModalField>
+                      <strong>Telefone</strong>
+                      <span>{selectedApproval.numero || '—'}</span>
+                    </ModalField>
+                    <ModalField>
+                      <strong>CPF</strong>
+                      <span>{selectedApproval.cpf || '—'}</span>
+                    </ModalField>
+                    <ModalField>
+                      <strong>Empresa</strong>
+                      <span>{selectedApproval.empresa?.nome || '—'}</span>
+                    </ModalField>
+                    <ModalField>
+                      <strong>Cargo</strong>
+                      <span>{selectedApproval.cargo?.nome || '—'}</span>
+                    </ModalField>
+                    <ModalField>
+                      <strong>Regional</strong>
+                      <span>{selectedApproval.regional?.nome || '—'}</span>
+                    </ModalField>
+                    <ModalField>
+                      <strong>Status</strong>
+                      <span><Pill tone="warning">Pendente</Pill></span>
+                    </ModalField>
+                  </ModalBody>
 
-                  <div>
-                    <strong>Observacao:</strong>
-                    <div
-                      style={{
-                        marginTop: 6,
-                        padding: 10,
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 8,
-                        minHeight: 50,
-                        color: '#374151',
-                        background: '#fafafa',
-                      }}
-                    >
-                      {selectedApproval.observacao || 'Sem observacao'}
-                    </div>
-                  </div>
+                  <ObservacaoBox>
+                    <strong>Observação</strong>
+                    <div>{selectedApproval.observacao || 'Sem observação'}</div>
+                  </ObservacaoBox>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                    <button
+                  <ModalFooter>
+                    <ModalRejectBtn
                       type="button"
                       onClick={() => handleReject(selectedApproval.id)}
                       disabled={isApproving}
-                      style={{
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '10px 14px',
-                        cursor: 'pointer',
-                        background: '#dc2626',
-                        color: '#fff',
-                        fontWeight: 700,
-                      }}
                     >
-                      Rejeitar
-                    </button>
-                    <button
+                      {isApproving ? 'Aguarde...' : 'Rejeitar'}
+                    </ModalRejectBtn>
+                    <ModalApproveBtn
                       type="button"
                       onClick={() => handleApprove(selectedApproval.id)}
                       disabled={isApproving}
-                      style={{
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '10px 14px',
-                        cursor: 'pointer',
-                        background: '#16a34a',
-                        color: '#fff',
-                        fontWeight: 700,
-                      }}
                     >
-                      Aprovar
-                    </button>
-                  </div>
+                      {isApproving ? 'Aguarde...' : 'Aprovar'}
+                    </ModalApproveBtn>
+                  </ModalFooter>
                 </>
               )}
-            </div>
-          </div>
+
+            </ModalContent>
+          </ModalOverlay>
         )}
+
       </ContentArea>
     </LayoutContainer>
   );
 };
 
 export default Admin;
-

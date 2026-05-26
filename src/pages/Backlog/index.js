@@ -43,7 +43,7 @@ const TableSkeleton = () => (
   <tbody>
     {[...Array(5)].map((_, index) => (
       <tr key={index}>
-        {[...Array(13)].map((__, i) => (
+        {[...Array(12)].map((__, i) => (
           <td key={i}>
             <SkeletonText />
           </td>
@@ -296,7 +296,6 @@ const Backlog = () => {
                 <th>Território</th>
                 <th>Empresa</th>
                 <th>ID Vistoria</th>
-                <th>Supervisor</th>
                 <th>Técnico</th>
                 <th>SA</th>
                 <th>Data Laudo</th>
@@ -325,7 +324,6 @@ const Backlog = () => {
                         <td>{row.territorio}</td>
                         <td>{row.empresa}</td>
                         <td>{row.id}</td>
-                        <td>{row.supervisor}</td>
                         <td>{row.tecnico}</td>
                         <td>{row.protocolo}</td>
                         <td>{row.data}</td>
@@ -341,9 +339,11 @@ const Backlog = () => {
                         </td>
                         <td>
                           <ActionButtons>
-                            <button title="Ver Detalhes">
-                              <FiEye />
-                            </button>
+                            {user?.role === 'admin' && (
+                              <button title="Ver Detalhes" onClick={() => navigate(`/vistoria/${row.id}`)}>
+                                <FiEye />
+                              </button>
+                            )}
                             <button title="Resolver" onClick={() => handleResolverClick(row)}>
                               <FiCheckSquare />
                             </button>
@@ -354,7 +354,7 @@ const Backlog = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="13" style={{ textAlign: 'center', padding: '16px' }}>
+                    <td colSpan="12" style={{ textAlign: 'center', padding: '16px' }}>
                       Nenhum resultado encontrado para os filtros aplicados.
                     </td>
                   </tr>

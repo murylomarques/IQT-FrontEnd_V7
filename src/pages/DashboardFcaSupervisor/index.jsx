@@ -80,8 +80,13 @@ const DashboardFcaSupervisor = () => {
         fcafFetch(`/fcaf/tecnico/${id}/pos`),
       ]);
       setTecDetail(det);
-      if (cl) { setClAnswers(cl.answers); setClLoaded(true); }
-      else    { setClAnswers(buildEmptyChecklist()); setClLoaded(false); }
+      if (cl && Array.isArray(cl.answers) && cl.answers.length > 0) {
+        setClAnswers(cl.answers);
+        setClLoaded(true);
+      } else {
+        setClAnswers(buildEmptyChecklist());
+        setClLoaded(false);
+      }
       setPoList(pos);
     } catch (err) { toast.error(err.message); }
   }, []);
@@ -288,22 +293,34 @@ const DashboardFcaSupervisor = () => {
                                 const absIdx = startIdx + qi;
                                 const ans    = clAnswers[absIdx];
                                 return (
-                                  <div key={qi} style={{ borderBottom: '1px solid rgba(53,48,45,.07)', paddingBottom: '0.75rem', marginBottom: '0.75rem' }}>
+                                  <div key={qi} style={{ borderBottom: '1px solid rgba(53,48,45,.07)', paddingBottom: '0.9rem', marginBottom: '0.9rem' }}>
                                     <p style={{ fontSize: '0.84rem', fontWeight: 600, color: '#2e2a26', marginBottom: '0.45rem', lineHeight: 1.5 }}>
                                       {q}
                                     </p>
-                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                      {['Sim', 'Não'].map((opt) => (
-                                        <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: clLoaded ? 'default' : 'pointer', fontSize: '0.82rem', fontWeight: 700, color: ans?.answer === opt ? (opt === 'Sim' ? '#1a5028' : '#6d1e1a') : '#9a948f' }}>
-                                          <input type="radio" name={`q-${absIdx}`} value={opt} checked={ans?.answer === opt} disabled={clLoaded}
-                                            onChange={() => setClAnswer(absIdx, 'answer', opt)}
-                                            style={{ accentColor: opt === 'Sim' ? '#2f7a3f' : '#9d2926' }}
-                                          />
-                                          {opt}
-                                        </label>
-                                      ))}
+                                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                      {['Sim', 'Não'].map((opt) => {
+                                        const sel = ans?.answer === opt;
+                                        const isSim = opt === 'Sim';
+                                        return (
+                                          <label key={opt} style={{
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                            padding: '0.45rem 1.1rem', borderRadius: '999px', minHeight: '40px', minWidth: '72px',
+                                            cursor: clLoaded ? 'default' : 'pointer', fontSize: '0.82rem', fontWeight: 700,
+                                            userSelect: 'none', transition: 'all .15s',
+                                            background: sel ? (isSim ? 'rgba(47,122,63,.16)' : 'rgba(157,41,38,.16)') : 'rgba(53,48,45,.07)',
+                                            color: sel ? (isSim ? '#1a5028' : '#6d1e1a') : '#9a948f',
+                                            border: `1.5px solid ${sel ? (isSim ? 'rgba(47,122,63,.4)' : 'rgba(157,41,38,.4)') : 'transparent'}`,
+                                          }}>
+                                            <input type="radio" name={`q-${absIdx}`} value={opt} checked={sel} disabled={clLoaded}
+                                              onChange={() => setClAnswer(absIdx, 'answer', opt)}
+                                              style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                                            />
+                                            {opt}
+                                          </label>
+                                        );
+                                      })}
                                       <Inp
-                                        style={{ flex: 1, minWidth: 160, fontSize: '0.78rem', padding: '0.3rem 0.6rem' }}
+                                        style={{ flex: 1, minWidth: 140, fontSize: '0.78rem', padding: '0.42rem 0.7rem' }}
                                         placeholder="Observação (opcional)"
                                         value={ans?.observation || ''}
                                         onChange={(e) => setClAnswer(absIdx, 'observation', e.target.value)}
@@ -348,17 +365,23 @@ const DashboardFcaSupervisor = () => {
 
                 {selectedTec && tecDetail && (
                   <>
+                    {!tecDetail.has_checklist && (
+                      <Alert $t="warn" style={{ marginBottom: '1rem' }}>
+                        ⚠️ Preencha o Checklist deste técnico antes de registrar um PO.
+                      </Alert>
+                    )}
+
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
                       <CertChip v={tecDetail.certificado} />
                       <span style={{ fontSize: '0.82rem', color: '#5a5551', fontWeight: 600 }}>
                         POs registrados: <strong>{tecDetail.po_count}</strong> ({tecDetail.po_days} dias distintos / {tecDetail.required_pos} necessários)
                       </span>
-                      {period && !period.is_expired && (
+                      {period && !period.is_expired && tecDetail.has_checklist && (
                         <Btn className="sm" onClick={openPoModal}>+ Novo PO</Btn>
                       )}
                     </div>
 
-                    {!tecDetail.isCertificado && (
+                    {!tecDetail.isCertificado && tecDetail.has_checklist && (
                       <Alert $t="warn" style={{ marginBottom: '1rem' }}>
                         Técnico não certificado — necessita {tecDetail.required_pos} POs em dias diferentes. Máximo 1 PO por dia.
                       </Alert>
@@ -411,20 +434,32 @@ const DashboardFcaSupervisor = () => {
               {PO_QUESTIONS.map((q, idx) => {
                 const ans = poAnswers[idx];
                 return (
-                  <div key={idx} style={{ borderBottom: '1px solid rgba(53,48,45,.07)', paddingBottom: '0.7rem', marginBottom: '0.7rem' }}>
+                  <div key={idx} style={{ borderBottom: '1px solid rgba(53,48,45,.07)', paddingBottom: '0.85rem', marginBottom: '0.85rem' }}>
                     <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#2e2a26', marginBottom: '0.4rem', lineHeight: 1.5 }}>
                       {idx + 1}. {q}
                     </p>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {['Sim', 'Não'].map((opt) => (
-                        <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: ans?.answer === opt ? (opt === 'Sim' ? '#1a5028' : '#6d1e1a') : '#9a948f' }}>
-                          <input type="radio" name={`po-q-${idx}`} value={opt} checked={ans?.answer === opt}
-                            onChange={() => setPoAnswer(idx, 'answer', opt)}
-                            style={{ accentColor: opt === 'Sim' ? '#2f7a3f' : '#9d2926' }}
-                          />
-                          {opt}
-                        </label>
-                      ))}
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {['Sim', 'Não'].map((opt) => {
+                        const sel = ans?.answer === opt;
+                        const isSim = opt === 'Sim';
+                        return (
+                          <label key={opt} style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '0.45rem 1.1rem', borderRadius: '999px', minHeight: '40px', minWidth: '72px',
+                            cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700,
+                            userSelect: 'none', transition: 'all .15s',
+                            background: sel ? (isSim ? 'rgba(47,122,63,.16)' : 'rgba(157,41,38,.16)') : 'rgba(53,48,45,.07)',
+                            color: sel ? (isSim ? '#1a5028' : '#6d1e1a') : '#9a948f',
+                            border: `1.5px solid ${sel ? (isSim ? 'rgba(47,122,63,.4)' : 'rgba(157,41,38,.4)') : 'transparent'}`,
+                          }}>
+                            <input type="radio" name={`po-q-${idx}`} value={opt} checked={sel}
+                              onChange={() => setPoAnswer(idx, 'answer', opt)}
+                              style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                            />
+                            {opt}
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 );

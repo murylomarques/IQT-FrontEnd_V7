@@ -6,18 +6,23 @@ import { toast } from 'react-toastify';
 import BacklogSkeleton from '../../components/BacklogSkeleton';
 
 import {
-  LayoutContainer,
-  ContentArea,
-  Header,
-  HeaderTitle,
-  UserProfile,
+  LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile,
 } from '../Dashboard/styles';
 
 import {
-  Table, TableHeader, TableRow, TableCell, ActionButton,
+  FilterPanel, FilterPanelHeader, FilterGrid, FilterField, FilterFieldWide,
+  FilterInput, FilterActions, FilterBtn, ClearBtn,
+  SectionTitle,
   StatsContainer, StatCard, StatCardValue, StatCardLabel,
-  SectionTitle, FiscaisCarousel, FiscalCard, FiscalName, FiscalStat,
+  FiscaisCarousel, FiscalCard, FiscalAvatar, FiscalInfo, FiscalName, FiscalStat, FiscalBadge,
+  TableWrapper, Table, TableHeader, TableRow, TableCell, ActionButton, EmptyState,
+  PaginationWrapper, PageBtn, PageInfo,
 } from './styles';
+
+const getInitials = (name = '') =>
+  name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || '?';
+
+const FILTROS_VAZIOS = { tecnico: '', empresa: '', cto: '', sa: '', endereco: '' };
 
 const Agendamentos = () => {
   const { user, logout, apiFetch } = useAuth();
@@ -25,21 +30,13 @@ const Agendamentos = () => {
 
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const [atendimentos, setAtendimentos] = useState([]);
   const [stats, setStats] = useState({ global: {}, fiscais: [] });
-
-  const [filtros, setFiltros] = useState({
-    tecnico: '',
-    empresa: '',
-    cto: '',
-    sa: '',
-    endereco: '',
-  });
-
+  const [filtros, setFiltros] = useState(FILTROS_VAZIOS);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+
   const recordsPerPage = 50;
 
   const fetchPage = useCallback(async () => {
@@ -49,61 +46,41 @@ const Agendamentos = () => {
         page: String(currentPage),
         per_page: String(recordsPerPage),
       });
-
-      if (filtros.tecnico.trim()) params.set('tecnico', filtros.tecnico.trim());
-      if (filtros.empresa.trim()) params.set('empresa', filtros.empresa.trim());
-      if (filtros.cto.trim()) params.set('cto', filtros.cto.trim());
-      if (filtros.sa.trim()) params.set('sa', filtros.sa.trim());
+      if (filtros.tecnico.trim())  params.set('tecnico',  filtros.tecnico.trim());
+      if (filtros.empresa.trim())  params.set('empresa',  filtros.empresa.trim());
+      if (filtros.cto.trim())      params.set('cto',      filtros.cto.trim());
+      if (filtros.sa.trim())       params.set('sa',       filtros.sa.trim());
       if (filtros.endereco.trim()) params.set('endereco', filtros.endereco.trim());
 
       const response = await apiFetch(`/api/atendimentos?${params.toString()}`);
-
       setAtendimentos(Array.isArray(response?.data) ? response.data : []);
       setStats(response?.stats || { global: {}, fiscais: [] });
       setTotalPages(Number(response?.last_page || 1));
       setTotalRecords(Number(response?.total || 0));
-    } catch (error) {
+    } catch {
       toast.error('Erro ao carregar atendimentos.');
     } finally {
       setIsLoading(false);
     }
   }, [apiFetch, currentPage, filtros]);
 
-  useEffect(() => {
-    fetchPage();
-  }, [fetchPage]);
+  useEffect(() => { fetchPage(); }, [fetchPage]);
 
   const handleApplyFilters = () => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-      return;
-    }
+    if (currentPage !== 1) { setCurrentPage(1); return; }
     fetchPage();
+  };
+
+  const handleClearFilters = () => {
+    setFiltros(FILTROS_VAZIOS);
+    setCurrentPage(1);
   };
 
   const handleAgendarClick = (atendimento) => {
-    navigate(`/agendamento/${atendimento.ID}`, {
-      state: { atendimento },
-    });
+    navigate(`/agendamento/${atendimento.ID}`, { state: { atendimento } });
   };
 
-  if (isLoading) {
-    return (
-      <LayoutContainer>
-        <Menu isExpanded={isMenuExpanded} setIsExpanded={setIsMenuExpanded} />
-        <ContentArea isMenuExpanded={isMenuExpanded}>
-          <Header>
-            <HeaderTitle>Atendimentos para Agendar</HeaderTitle>
-            <UserProfile>
-              <span>{user?.nome}</span>
-              <button onClick={logout}>Sair</button>
-            </UserProfile>
-          </Header>
-          <BacklogSkeleton kpis={3} filters={5} rows={6} cols={7} />
-        </ContentArea>
-      </LayoutContainer>
-    );
-  }
+  const setFiltro = (key) => (e) => setFiltros(prev => ({ ...prev, [key]: e.target.value }));
 
   return (
     <LayoutContainer>
@@ -117,142 +94,202 @@ const Agendamentos = () => {
           </UserProfile>
         </Header>
 
-        <SectionTitle>Filtros</SectionTitle>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 15,
-          marginBottom: 25,
-          background: '#f8f8f8',
-          padding: 15,
-          borderRadius: 10,
-          border: '1px solid #ddd',
-          alignItems: 'center',
-        }}>
-          <input type="text" placeholder="Tecnico" value={filtros.tecnico} onChange={(e) => setFiltros({ ...filtros, tecnico: e.target.value })} style={inputStyle} />
-          <input type="text" placeholder="Empresa" value={filtros.empresa} onChange={(e) => setFiltros({ ...filtros, empresa: e.target.value })} style={inputStyle} />
-          <input type="text" placeholder="CTO" value={filtros.cto} onChange={(e) => setFiltros({ ...filtros, cto: e.target.value })} style={inputStyle} />
-          <input type="text" placeholder="SA" value={filtros.sa} onChange={(e) => setFiltros({ ...filtros, sa: e.target.value })} style={inputStyle} />
-          <input type="text" placeholder="Endereco" value={filtros.endereco} onChange={(e) => setFiltros({ ...filtros, endereco: e.target.value })} style={{ ...inputStyle, width: 260 }} />
-          <button onClick={handleApplyFilters} style={buttonFiltrarStyle}>Aplicar Filtros</button>
-        </div>
+        {isLoading ? (
+          <BacklogSkeleton kpis={3} filters={5} rows={6} cols={7} />
+        ) : (
+          <>
+            {/* ── Filtros ──────────────────────────────────────────────────── */}
+            <FilterPanel>
+              <FilterPanelHeader>
+                <span>Filtros de busca</span>
+              </FilterPanelHeader>
+              <FilterGrid>
+                <FilterField>
+                  <label>Técnico</label>
+                  <FilterInput
+                    type="text"
+                    placeholder="Nome do técnico"
+                    value={filtros.tecnico}
+                    onChange={setFiltro('tecnico')}
+                    onKeyDown={e => e.key === 'Enter' && handleApplyFilters()}
+                  />
+                </FilterField>
 
-        <SectionTitle>Resumo Geral</SectionTitle>
-        <StatsContainer>
-          <StatCard>
-            <StatCardValue>{stats.global?.total_agendamentos ?? 0}</StatCardValue>
-            <StatCardLabel>Agendamentos</StatCardLabel>
-          </StatCard>
-          <StatCard>
-            <StatCardValue>{stats.global?.pendentes_hoje ?? 0}</StatCardValue>
-            <StatCardLabel>Pendentes Hoje</StatCardLabel>
-          </StatCard>
-          <StatCard>
-            <StatCardValue>{stats.global?.total_concluidos ?? 0}</StatCardValue>
-            <StatCardLabel>Concluidos</StatCardLabel>
-          </StatCard>
-        </StatsContainer>
+                <FilterField>
+                  <label>Empresa</label>
+                  <FilterInput
+                    type="text"
+                    placeholder="Nome da empresa"
+                    value={filtros.empresa}
+                    onChange={setFiltro('empresa')}
+                    onKeyDown={e => e.key === 'Enter' && handleApplyFilters()}
+                  />
+                </FilterField>
 
-        <SectionTitle>Agenda por Fiscal</SectionTitle>
-        <FiscaisCarousel>
-          {(stats.fiscais || []).map((fiscal, index) => (
-            <FiscalCard key={index}>
-              <FiscalName>{fiscal.nome}</FiscalName>
-              <FiscalStat>
-                <span>Hoje: <strong>{fiscal.agendados_hoje}</strong></span>
-                <span>Futuro: <strong>{fiscal.agendados_futuro}</strong></span>
-              </FiscalStat>
-            </FiscalCard>
-          ))}
-        </FiscaisCarousel>
+                <FilterField>
+                  <label>CTO</label>
+                  <FilterInput
+                    type="text"
+                    placeholder="Código CTO"
+                    value={filtros.cto}
+                    onChange={setFiltro('cto')}
+                    onKeyDown={e => e.key === 'Enter' && handleApplyFilters()}
+                  />
+                </FilterField>
 
-        <SectionTitle>Fila de Atendimento ({totalRecords})</SectionTitle>
-        <Table>
-          <thead>
-            <TableRow>
-              <TableHeader>SA</TableHeader>
-              <TableHeader>Empresa</TableHeader>
-              <TableHeader>Tecnico</TableHeader>
-              <TableHeader>Telefone</TableHeader>
-              <TableHeader>Endereco</TableHeader>
-              <TableHeader>CTO</TableHeader>
-              <TableHeader>Acao</TableHeader>
-            </TableRow>
-          </thead>
-          <tbody>
-            {atendimentos.map((at) => (
-              <TableRow key={at.ID}>
-                <TableCell>{at.NumeroCompromisso}</TableCell>
-                <TableCell>{at.Empresa}</TableCell>
-                <TableCell>{at.Tecnico}</TableCell>
-                <TableCell>{at.Telefone}</TableCell>
-                <TableCell>{at.Endereco}</TableCell>
-                <TableCell>{at.CTO}</TableCell>
-                <TableCell>
-                  <ActionButton onClick={() => handleAgendarClick(at)}>Agendar</ActionButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </tbody>
-        </Table>
+                <FilterField>
+                  <label>SA</label>
+                  <FilterInput
+                    type="text"
+                    placeholder="Número SA"
+                    value={filtros.sa}
+                    onChange={setFiltro('sa')}
+                    onKeyDown={e => e.key === 'Enter' && handleApplyFilters()}
+                  />
+                </FilterField>
 
-        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 10 }}>
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => prev - 1)}
-            style={simplePaginationButtonStyle}
-          >
-            Anterior
-          </button>
+                <FilterFieldWide>
+                  <label>Endereço</label>
+                  <FilterInput
+                    type="text"
+                    placeholder="Rua, bairro ou cidade"
+                    value={filtros.endereco}
+                    onChange={setFiltro('endereco')}
+                    onKeyDown={e => e.key === 'Enter' && handleApplyFilters()}
+                  />
+                </FilterFieldWide>
 
-          <span style={{ alignSelf: 'center' }}>Pagina {currentPage} de {totalPages}</span>
+                <FilterActions>
+                  <FilterBtn onClick={handleApplyFilters}>Aplicar</FilterBtn>
+                  <ClearBtn onClick={handleClearFilters}>Limpar</ClearBtn>
+                </FilterActions>
+              </FilterGrid>
+            </FilterPanel>
 
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => prev + 1)}
-            style={simplePaginationButtonStyle}
-          >
-            Proxima
-          </button>
-        </div>
+            {/* ── Resumo Geral ─────────────────────────────────────────────── */}
+            <SectionTitle>Resumo Geral</SectionTitle>
+            <StatsContainer>
+              <StatCard accent="var(--ink-2)">
+                <StatCardValue>{stats.global?.total_agendamentos ?? 0}</StatCardValue>
+                <StatCardLabel>Total Agendamentos</StatCardLabel>
+              </StatCard>
+              <StatCard accent="var(--warning)">
+                <StatCardValue color="var(--warning)">{stats.global?.pendentes_hoje ?? 0}</StatCardValue>
+                <StatCardLabel>Pendentes Hoje</StatCardLabel>
+              </StatCard>
+              <StatCard accent="var(--success)">
+                <StatCardValue color="var(--success)">{stats.global?.total_concluidos ?? 0}</StatCardValue>
+                <StatCardLabel>Concluídos</StatCardLabel>
+              </StatCard>
+            </StatsContainer>
+
+            {/* ── Agenda por Fiscal ─────────────────────────────────────────── */}
+            {(stats.fiscais || []).length > 0 && (
+              <>
+                <SectionTitle>Agenda por Fiscal</SectionTitle>
+                <FiscaisCarousel>
+                  {stats.fiscais.map((fiscal, i) => (
+                    <FiscalCard key={i}>
+                      <FiscalAvatar>{getInitials(fiscal.nome)}</FiscalAvatar>
+                      <FiscalInfo>
+                        <FiscalName title={fiscal.nome}>{fiscal.nome}</FiscalName>
+                        <FiscalStat>
+                          <FiscalBadge variant="hoje">
+                            Hoje: {fiscal.agendados_hoje}
+                          </FiscalBadge>
+                          <FiscalBadge variant="futuro">
+                            Futuro: {fiscal.agendados_futuro}
+                          </FiscalBadge>
+                        </FiscalStat>
+                      </FiscalInfo>
+                    </FiscalCard>
+                  ))}
+                </FiscaisCarousel>
+              </>
+            )}
+
+            {/* ── Fila de Atendimento ───────────────────────────────────────── */}
+            <SectionTitle>
+              Fila de Atendimento
+              {totalRecords > 0 && (
+                <span style={{
+                  fontSize: '0.72rem', fontWeight: 700,
+                  background: 'var(--bg-2)', color: 'var(--ink-2)',
+                  padding: '3px 9px', borderRadius: '20px',
+                  border: '1px solid var(--border-0)',
+                  textTransform: 'none', letterSpacing: 0,
+                }}>
+                  {totalRecords} registros
+                </span>
+              )}
+            </SectionTitle>
+
+            <TableWrapper>
+              <Table>
+                <thead>
+                  <TableRow>
+                    <TableHeader>SA</TableHeader>
+                    <TableHeader>Empresa</TableHeader>
+                    <TableHeader>Técnico</TableHeader>
+                    <TableHeader>Telefone</TableHeader>
+                    <TableHeader>Endereço</TableHeader>
+                    <TableHeader>CTO</TableHeader>
+                    <TableHeader>Ação</TableHeader>
+                  </TableRow>
+                </thead>
+                <tbody>
+                  {atendimentos.length === 0 && (
+                    <tr>
+                      <td colSpan={7}>
+                        <EmptyState>Nenhum atendimento encontrado para os filtros selecionados.</EmptyState>
+                      </td>
+                    </tr>
+                  )}
+                  {atendimentos.map((at) => (
+                    <TableRow key={at.ID}>
+                      <TableCell style={{ fontWeight: 700, color: 'var(--ink-0)' }}>
+                        {at.NumeroCompromisso}
+                      </TableCell>
+                      <TableCell truncate maxWidth="160px">{at.Empresa}</TableCell>
+                      <TableCell truncate maxWidth="160px">{at.Tecnico}</TableCell>
+                      <TableCell style={{ whiteSpace: 'nowrap' }}>{at.Telefone}</TableCell>
+                      <TableCell truncate maxWidth="220px" title={at.Endereco}>{at.Endereco}</TableCell>
+                      <TableCell>{at.CTO}</TableCell>
+                      <TableCell>
+                        <ActionButton onClick={() => handleAgendarClick(at)}>
+                          Agendar
+                        </ActionButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </tbody>
+              </Table>
+            </TableWrapper>
+
+            {/* ── Paginação ─────────────────────────────────────────────────── */}
+            {totalPages > 1 && (
+              <PaginationWrapper>
+                <PageBtn
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                >
+                  &#8249; Anterior
+                </PageBtn>
+                <PageInfo>Página {currentPage} de {totalPages}</PageInfo>
+                <PageBtn
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                >
+                  Próxima &#8250;
+                </PageBtn>
+              </PaginationWrapper>
+            )}
+          </>
+        )}
+
       </ContentArea>
     </LayoutContainer>
   );
 };
 
-const inputStyle = {
-  padding: 10,
-  width: 200,
-  borderRadius: 8,
-  border: '1px solid #ccc',
-  fontSize: 15,
-  background: '#fff',
-};
-
-const buttonFiltrarStyle = {
-  padding: '10px 20px',
-  background: '#6c1b0b',
-  color: '#fff',
-  borderRadius: 8,
-  border: 'none',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  height: 42,
-};
-
-const simplePaginationButtonStyle = {
-  padding: '8px 16px',
-  background: '#6c1b0b',
-  color: '#fff',
-  borderRadius: 8,
-  border: 'none',
-  cursor: 'pointer',
-  fontWeight: 'bold',
-  fontSize: 14,
-  minWidth: 90,
-  transition: 'all 0.2s',
-  outline: 'none',
-};
-
 export default Agendamentos;
-

@@ -42,6 +42,7 @@ const fadeUp   = keyframes`from{opacity:0;transform:translateY(14px)}to{opacity:
 const fadeIn   = keyframes`from{opacity:0}to{opacity:1}`;
 const pulseDot = keyframes`0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}`;
 const shimmer  = keyframes`0%{background-position:200% 0}100%{background-position:-200% 0}`;
+const slideUp  = keyframes`from{transform:translateY(100%)}to{transform:translateY(0)}`;
 
 // ─── Global ───────────────────────────────────────────────────────────────────
 export const FcaGlobal = createGlobalStyle`
@@ -145,6 +146,12 @@ export const SessionPill = styled.div`
 
   .sname { font-size: .82rem; font-weight: 700; color: ${C.textDark}; white-space: nowrap; }
   .srole { font-size: .68rem; color: ${C.textMid}; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+
+  @media (max-width: 380px) {
+    .sname, .srole { display: none; }
+    gap: 0;
+    padding: .4rem .6rem;
+  }
 `;
 
 // ─── Main shell ───────────────────────────────────────────────────────────────
@@ -259,6 +266,11 @@ export const Card = styled.div`
   transition: box-shadow .22s;
 
   &:hover { box-shadow: ${C.shadowMd}; }
+
+  @media (max-width: 680px) {
+    padding: ${({ $p }) => $p || '1rem'};
+    border-radius: 16px;
+  }
 `;
 
 export const CardRow = styled.div`
@@ -296,6 +308,11 @@ export const MetricsRow = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   gap: .8rem;
   margin-bottom: 1.2rem;
+
+  @media (max-width: 500px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: .55rem;
+  }
 `;
 
 export const Metric = styled.div`
@@ -327,6 +344,11 @@ export const Metric = styled.div`
     margin-top: .2rem;
     line-height: 1;
   }
+
+  @media (max-width: 500px) {
+    padding: .8rem;
+    .value { font-size: 2rem; }
+  }
 `;
 
 // ─── Table ────────────────────────────────────────────────────────────────────
@@ -342,7 +364,7 @@ export const TblWrap = styled.div`
 export const Tbl = styled.table`
   width: 100%;
   border-collapse: collapse;
-  min-width: 580px;
+  min-width: 540px;
   background: rgba(255,255,255,.90);
 
   thead tr {
@@ -372,6 +394,12 @@ export const Tbl = styled.table`
   tbody tr:last-child td { border-bottom: none; }
   tbody tr { transition: background .14s; }
   tbody tr:hover { background: rgba(244,186,68,.08); }
+
+  @media (max-width: 600px) {
+    min-width: 480px;
+    th { padding: .5rem .6rem; font-size: .62rem; }
+    td { padding: .6rem .6rem; font-size: .8rem; }
+  }
 `;
 
 // ─── Form ────────────────────────────────────────────────────────────────────
@@ -579,6 +607,11 @@ export const Overlay = styled.div`
   z-index: 9999;
   padding: 1rem;
   animation: ${fadeIn} .2s ease;
+
+  @media (max-width: 600px) {
+    align-items: flex-end;
+    padding: 0;
+  }
 `;
 
 export const ModalBox = styled.div`
@@ -609,6 +642,28 @@ export const ModalBox = styled.div`
     margin-top: 1.3rem;
     padding-top: 1rem;
     border-top: 1px solid ${C.border};
+  }
+
+  @media (max-width: 600px) {
+    max-width: 100%;
+    border-radius: 22px 22px 0 0;
+    padding: 1rem 1.1rem 2rem;
+    max-height: 88vh;
+    animation: ${slideUp} .3s ease;
+
+    &::before {
+      content: '';
+      display: block;
+      width: 40px; height: 4px;
+      border-radius: 2px;
+      background: rgba(53,48,45,.18);
+      margin: 0 auto .9rem;
+    }
+
+    .mfooter {
+      flex-direction: column-reverse;
+      button { width: 100%; justify-content: center; padding: .75rem; font-size: .88rem; border-radius: 14px; }
+    }
   }
 `;
 

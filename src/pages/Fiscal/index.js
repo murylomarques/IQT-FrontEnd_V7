@@ -4,34 +4,30 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import VistoriaList from '../../components/VistoriaList';
 import SkeletonScreen from '../../components/SkeletonScreen';
+import { FiPlus, FiClipboard } from 'react-icons/fi';
 
-// Importa os estilos da própria pasta
-import { 
-  FiscalContainer, 
-  Title, 
+import {
+  FiscalContainer,
+  PageHeader,
+  HeaderRow,
+  Title,
+  Subtitle,
+  NewVistoriaButton,
+  PageContent,
   ErrorMessage,
   CardsContainer,
   Card,
   CardCount,
   CardTitle,
-  ListTitle
+  ListTitle,
 } from './styles';
-
-// ==========================================================
-// ============== IMPORTAÇÕES QUE FALTAVAM ==================
-// ==========================================================
-import { FiPlus } from 'react-icons/fi';
-// Importa o PrimaryButton dos estilos do Admin, onde ele foi definido
-import { PrimaryButton } from '../Admin/styles';
-// ==========================================================
-
 
 const Fiscal = () => {
   const [vistorias, setVistorias] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  const { apiFetch } = useAuth();
+
+  const { user, apiFetch } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,33 +45,72 @@ const Fiscal = () => {
     fetchVistoriasDoDia();
   }, [apiFetch]);
 
-  const vistoriasPendentes = vistorias.filter(v => v.statusAgendamento !== 'Concluído' && v.statusAgendamento !== 'Cancelado');
+  const vistoriasPendentes = vistorias.filter(
+    v => v.statusAgendamento !== 'Concluído' && v.statusAgendamento !== 'Cancelado'
+  );
   const vistoriasRealizadas = vistorias.filter(v => v.statusAgendamento === 'Concluído');
+
   const handleVistoriaClick = (id) => navigate(`/vistoria/${id}`);
 
-  if (isLoading) return <FiscalContainer><SkeletonScreen variant="table" rows={6} /></FiscalContainer>;
-  if (error) return <FiscalContainer><ErrorMessage>{error}</ErrorMessage></FiscalContainer>;
+  if (isLoading) return (
+    <FiscalContainer>
+      <PageHeader>
+        <Title>Meu Painel de Vistorias</Title>
+      </PageHeader>
+      <PageContent>
+        <SkeletonScreen variant="table" rows={6} />
+      </PageContent>
+    </FiscalContainer>
+  );
+
+  if (error) return (
+    <FiscalContainer>
+      <PageHeader>
+        <Title>Meu Painel de Vistorias</Title>
+      </PageHeader>
+      <PageContent>
+        <ErrorMessage>{error}</ErrorMessage>
+      </PageContent>
+    </FiscalContainer>
+  );
 
   return (
     <FiscalContainer>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <Title style={{ marginBottom: 0, textAlign: 'left' }}>Meu Painel de Vistorias</Title>
-        <PrimaryButton onClick={() => navigate('/vistoria-seguranca')}>
-          <FiPlus /> Nova Vistoria de Segurança
-        </PrimaryButton>
-      </div>
-      
-      <CardsContainer>
-        <Card borderColor="#f0ad4e"><CardCount>{vistoriasPendentes.length}</CardCount><CardTitle>Pendentes Hoje</CardTitle></Card>
-        <Card borderColor="#5cb85c"><CardCount>{vistoriasRealizadas.length}</CardCount><CardTitle>Concluídas Hoje</CardTitle></Card>
-      </CardsContainer>
+      <PageHeader>
+        <HeaderRow>
+          <div>
+            <Title>Meu Painel</Title>
+            <Subtitle>Vistorias do dia — {user?.nome || 'Fiscal'}</Subtitle>
+          </div>
+          <NewVistoriaButton onClick={() => navigate('/vistoria-seguranca')}>
+            <FiPlus />
+            Nova Vistoria de Segurança
+          </NewVistoriaButton>
+        </HeaderRow>
+      </PageHeader>
 
-      <ListTitle>Vistorias Pendentes</ListTitle>
-      <VistoriaList 
-        vistorias={vistoriasPendentes} 
-        onItemClick={handleVistoriaClick} 
-        emptyMessage="Nenhuma vistoria pendente para hoje. Bom trabalho!"
-      />
+      <PageContent>
+        <CardsContainer>
+          <Card borderColor="var(--warning)">
+            <CardCount>{vistoriasPendentes.length}</CardCount>
+            <CardTitle>Pendentes Hoje</CardTitle>
+          </Card>
+          <Card borderColor="var(--success)">
+            <CardCount>{vistoriasRealizadas.length}</CardCount>
+            <CardTitle>Concluídas Hoje</CardTitle>
+          </Card>
+        </CardsContainer>
+
+        <ListTitle>
+          <FiClipboard />
+          Vistorias Pendentes
+        </ListTitle>
+        <VistoriaList
+          vistorias={vistoriasPendentes}
+          onItemClick={handleVistoriaClick}
+          emptyMessage="Nenhuma vistoria pendente para hoje. Bom trabalho!"
+        />
+      </PageContent>
     </FiscalContainer>
   );
 };

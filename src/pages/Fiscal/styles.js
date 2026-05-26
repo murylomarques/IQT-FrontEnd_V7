@@ -1,89 +1,138 @@
-// src/pages/Fiscal/styles.js
-
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 
 export const FiscalContainer = styled.div`
-  padding: 2rem;
-  max-width: 900px;
-  margin: 2rem auto;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  background: var(--bg-0);
+`;
+
+export const PageHeader = styled.div`
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-light) 100%);
+  padding: 20px 20px 28px;
+
+  @media (min-width: 768px) {
+    padding: 24px 32px 32px;
+  }
+`;
+
+export const HeaderRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
 `;
 
 export const Title = styled.h1`
-  font-size: 2.5rem;
-  color: ${({ theme }) => theme.colors.primary};
-  margin-bottom: 2rem;
-  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+
+  @media (min-width: 768px) {
+    font-size: 1.8rem;
+  }
 `;
 
-// ==========================================================
-// ==================== INÍCIO DA ADIÇÃO ====================
-// ==========================================================
+export const Subtitle = styled.p`
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.88rem;
+  margin: 4px 0 0;
+`;
 
-// Container para os cards
+export const NewVistoriaButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+  backdrop-filter: blur(4px);
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  @media (max-width: 420px) {
+    padding: 9px 12px;
+    font-size: 0.82rem;
+    gap: 6px;
+  }
+`;
+
+export const PageContent = styled.div`
+  padding: 20px;
+
+  @media (min-width: 768px) {
+    padding: 28px 32px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+`;
+
 export const CardsContainer = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr; // Cria duas colunas de tamanho igual
-  gap: 1.5rem; // Espaçamento entre os cards
-  margin-bottom: 3rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 28px;
 `;
 
-// Estilo de cada card individualmente
 export const Card = styled.div`
-  background-color: #ffffff;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  background: var(--bg-1);
+  padding: 18px 16px 20px;
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border-0);
+  border-top: 4px solid ${({ borderColor }) => borderColor || 'var(--brand)'};
   text-align: center;
-  border-left: 5px solid ${props => props.borderColor || '#ccc'};
 `;
 
 export const CardCount = styled.div`
-  font-size: 3rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.primary};
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--ink-0);
+  line-height: 1;
+  margin-bottom: 6px;
 `;
 
 export const CardTitle = styled.div`
-  font-size: 1.1rem;
-  color: #6c757d;
-  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
-// Título para a lista de vistorias
 export const ListTitle = styled.h2`
-  font-size: 1.8rem;
-  color: #333;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #eee;
-`;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ink-0);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
-
-// ==========================================================
-// ===================== FIM DA ADIÇÃO ======================
-// ==========================================================
-
-
-const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
-
-export const LoadingSpinner = styled.div`
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid ${({ theme }) => theme.colors.primary};
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: ${spin} 1s linear infinite;
-  margin: 5rem auto;
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-0);
+  }
 `;
 
 export const ErrorMessage = styled.p`
-  color: #c0392b;
-  background-color: #fdd;
-  padding: 1rem;
-  border-radius: 5px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-1);
   text-align: center;
+  font-weight: 600;
+  margin: 0;
 `;

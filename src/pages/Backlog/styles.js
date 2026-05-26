@@ -1,7 +1,5 @@
 import styled from 'styled-components';
 
-// --- ESTILOS REUTILIZADOS ---
-
 export const KpiGrid = styled.div`
   display: grid;
   gap: 24px;
@@ -10,32 +8,34 @@ export const KpiGrid = styled.div`
 `;
 
 export const KpiCard = styled.div`
-  background-color: #ffffff;
+  background-color: var(--bg-1);
   padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border-0);
   display: flex;
   flex-direction: column;
 
   h3 {
     font-size: 0.9rem;
-    color: #531110;
+    color: var(--brand-dark);
     margin: 0 0 8px 0;
     font-weight: 500;
   }
   p {
     font-size: 2rem;
     font-weight: 700;
-    color: #35302d;
+    color: var(--ink-0);
     margin: 0;
   }
 `;
 
 export const FiltersContainer = styled.div`
-  background-color: #fff;
-  border-radius: 16px;
+  background-color: var(--bg-1);
+  border-radius: var(--radius-2);
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border-0);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
@@ -51,24 +51,23 @@ export const FilterField = styled.div`
   label {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #531110;
+    color: var(--brand-dark);
   }
 
   input, select {
-    // --- CORREÇÃO APLICADA AQUI ---
-    box-sizing: border-box; /* Garante que o padding não aumente a largura total */
+    box-sizing: border-box;
     width: 100%;
     padding: 12px 16px;
     padding-left: 40px;
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    background-color: #f9f9f9;
+    border: 1px solid var(--border-0);
+    background-color: var(--bg-2);
     font-size: 0.9rem;
-    color: #35302d;
+    color: var(--ink-0);
     &:focus {
       outline: none;
-      border-color: #f4ba44;
-      box-shadow: 0 0 0 2px rgba(244, 186, 68, 0.3);
+      border-color: var(--brand-light);
+      box-shadow: 0 0 0 2px rgba(168, 55, 44, 0.15);
     }
   }
 
@@ -76,14 +75,15 @@ export const FilterField = styled.div`
     position: absolute;
     left: 12px;
     top: 38px;
-    color: #ae2e2a;
+    color: var(--brand);
   }
 `;
 
 export const TableContainer = styled.div`
-  background-color: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  background-color: var(--bg-1);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border-0);
   overflow-x: auto;
 `;
 
@@ -91,21 +91,21 @@ export const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
 
-  th, td { 
-    padding: 16px; 
-    text-align: left; 
-    border-bottom: 1px solid #f0f0f0; 
+  th, td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-1);
     vertical-align: middle;
   }
-  th { font-size: 0.8rem; font-weight: 600; color: #ae2e2a; text-transform: uppercase; }
-  td { font-size: 0.9rem; color: #35302d; }
-  
+  th { font-size: 0.8rem; font-weight: 600; color: var(--brand); text-transform: uppercase; }
+  td { font-size: 0.9rem; color: var(--ink-0); }
+
   tbody tr {
-    background-color: ${props => props.isReprovada ? '#fceeeedc' : 'transparent'};
+    background-color: ${props => props.isReprovada ? 'rgba(220, 38, 38, 0.04)' : 'transparent'};
     transition: background-color 0.2s ease;
 
     &:hover {
-      background-color: ${props => props.isReprovada ? 'rgba(174, 46, 42, 0.2)' : '#f9f5f5'};
+      background-color: ${props => props.isReprovada ? 'rgba(168, 55, 44, 0.1)' : 'var(--bg-2)'};
     }
   }
 `;
@@ -114,7 +114,7 @@ export const SkeletonText = styled.div`
   width: ${({ width }) => width || '90%'};
   height: ${({ height }) => height || '14px'};
   border-radius: 4px;
-  background: linear-gradient(-90deg, #f0f0f0 0%, #f8f8f8 50%, #f0f0f0 100%);
+  background: linear-gradient(-90deg, var(--border-1) 0%, var(--bg-2) 50%, var(--border-1) 100%);
   background-size: 400% 400%;
   animation: pulse 1.2s ease-in-out infinite;
 
@@ -130,20 +130,20 @@ export const StatusTag = styled.span`
   font-size: 0.8rem;
   font-weight: 600;
   color: ${({ status }) => {
-    if (status === 'Aprovado') return '#28a745';
-    if (status === 'Vencido' || status === 'Reprovado') return '#ae2e2a';
-    if (status === 'Aguardando resposta') return '#b42318';
-    if (status === 'Respondido (em análise)' || status === 'Respondido (em analise)') return '#b54708';
-    if (status === 'Sem pendência' || status === 'Sem pendencia') return '#15803d';
-    return '#531110';
+    if (status === 'Aprovado') return 'var(--success)';
+    if (status === 'Vencido' || status === 'Reprovado') return 'var(--danger)';
+    if (status === 'Aguardando resposta') return 'var(--danger)';
+    if (status === 'Respondido (em análise)' || status === 'Respondido (em analise)') return 'var(--warning)';
+    if (status === 'Sem pendência' || status === 'Sem pendencia') return 'var(--success)';
+    return 'var(--brand-dark)';
   }};
   background-color: ${({ status }) => {
-    if (status === 'Aprovado') return 'rgba(40, 167, 69, 0.1)';
-    if (status === 'Vencido' || status === 'Reprovado') return 'rgba(174, 46, 42, 0.1)';
-    if (status === 'Aguardando resposta') return 'rgba(180, 35, 24, 0.12)';
-    if (status === 'Respondido (em análise)' || status === 'Respondido (em analise)') return 'rgba(181, 71, 8, 0.12)';
-    if (status === 'Sem pendência' || status === 'Sem pendencia') return 'rgba(21, 128, 61, 0.12)';
-    return 'rgba(83, 17, 16, 0.1)';
+    if (status === 'Aprovado') return 'var(--success-bg)';
+    if (status === 'Vencido' || status === 'Reprovado') return 'var(--danger-bg)';
+    if (status === 'Aguardando resposta') return 'var(--danger-bg)';
+    if (status === 'Respondido (em análise)' || status === 'Respondido (em analise)') return 'var(--warning-bg)';
+    if (status === 'Sem pendência' || status === 'Sem pendencia') return 'var(--success-bg)';
+    return 'rgba(123, 31, 26, 0.08)';
   }};
 `;
 
@@ -159,13 +159,13 @@ export const ActionButtons = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #531110;
+    color: var(--brand-dark);
     transition: color 0.2s ease;
 
     &:hover {
-      color: #ae2e2a;
+      color: var(--brand);
     }
-    
+
     svg {
       font-size: 1.2rem;
     }
@@ -176,14 +176,14 @@ export const NotificationBell = styled.div`
   position: relative;
   display: flex;
   align-items: center;
-  color: #531110;
+  color: var(--brand-dark);
   font-size: 1.5rem;
   margin-right: 24px;
   cursor: pointer;
   transition: color 0.2s ease-in-out;
 
   &:hover {
-    color: #ae2e2a;
+    color: var(--brand);
   }
 `;
 
@@ -191,7 +191,7 @@ export const NotificationBadge = styled.span`
   position: absolute;
   top: -5px;
   right: -8px;
-  background-color: #ae2e2a;
+  background-color: var(--brand);
   color: #fff;
   border-radius: 50%;
   padding: 2px 6px;

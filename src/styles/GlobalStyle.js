@@ -7,21 +7,43 @@ export const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
   :root {
-    --bg-0: #f5f7fb;
+    /* ── Backgrounds ─────────────────────────────── */
+    --bg-0: #f0f2f5;
     --bg-1: #ffffff;
+    --bg-2: #f8fafc;
+
+    /* ── Text ────────────────────────────────────── */
     --ink-0: #0f172a;
     --ink-1: #334155;
     --ink-2: #64748b;
+    --ink-3: #94a3b8;
+
+    /* ── Marca (brand) ───────────────────────────── */
+    --brand:       #a8372c;
+    --brand-dark:  #7b1f1a;
+    --brand-light: #c0564b;
+
+    /* ── Acentos (info / dados) ──────────────────── */
     --accent-0: #1d4ed8;
     --accent-1: #0ea5e9;
     --accent-2: #f97316;
-    --success: #16a34a;
-    --warning: #f59e0b;
-    --danger: #dc2626;
+
+    /* ── Semântica ───────────────────────────────── */
+    --success:    #16a34a;
+    --success-bg: #dcfce7;
+    --warning:    #f59e0b;
+    --warning-bg: #fef3c7;
+    --danger:     #dc2626;
+    --danger-bg:  #fee2e2;
+
+    /* ── Estrutura ───────────────────────────────── */
     --border-0: #e2e8f0;
-    --shadow-1: 0 10px 30px rgba(15, 23, 42, 0.08);
-    --radius-1: 12px;
+    --border-1: #f1f5f9;
+    --shadow-1: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-2: 0 4px 24px rgba(0,0,0,0.08);
+    --radius-1: 10px;
     --radius-2: 16px;
+    --radius-3: 20px;
   }
 
   * {
@@ -37,9 +59,7 @@ export const GlobalStyle = createGlobalStyle`
     margin: 0;
     font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
     color: var(--ink-0);
-    background: radial-gradient(1200px 600px at -10% -10%, #eef2ff 0%, transparent 60%),
-                radial-gradient(900px 500px at 110% -20%, #e0f2fe 0%, transparent 55%),
-                var(--bg-0);
+    background: var(--bg-0);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -62,12 +82,20 @@ export const GlobalStyle = createGlobalStyle`
 // SHARED LAYOUT COMPONENTS
 // ==========================================================
 export const VistoriaContainer = styled.div`
-  padding: 1.5rem;
+  padding: 16px;
   max-width: 1050px;
-  margin: 2rem auto;
-  background-color: var(--bg-1);
-  border-radius: var(--radius-2);
-  box-shadow: var(--shadow-1);
+  margin: 0 auto;
+  background-color: var(--bg-0);
+  min-height: 100vh;
+
+  @media (min-width: 768px) {
+    padding: 2rem;
+    margin: 1.5rem auto;
+    background-color: var(--bg-1);
+    border-radius: var(--radius-2);
+    box-shadow: var(--shadow-1);
+    min-height: unset;
+  }
 `;
 
 export const Title = styled.h1`
@@ -96,8 +124,9 @@ export const SectionCard = styled.div`
 `;
 
 export const SectionTitle = styled.h2`
-  font-size: 1.35rem;
-  color: var(--accent-0);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--brand-dark);
   margin-top: 0;
   margin-bottom: 1rem;
   padding-bottom: 0.65rem;

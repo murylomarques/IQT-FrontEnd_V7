@@ -34,9 +34,9 @@ export const Input = styled.input`
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   background: #fff;
   &:focus {
-    border-color: var(--accent-1);
+    border-color: var(--brand-light);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+    box-shadow: 0 0 0 3px rgba(168, 55, 44, 0.12);
   }
 `;
 
@@ -49,9 +49,9 @@ export const Select = styled.select`
   background: #fff;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   &:focus {
-    border-color: var(--accent-1);
+    border-color: var(--brand-light);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+    box-shadow: 0 0 0 3px rgba(168, 55, 44, 0.12);
   }
 `;
 
@@ -64,26 +64,33 @@ export const TextArea = styled.textarea`
   font-size: 0.95rem;
   resize: vertical;
   background: #fff;
+  font-family: inherit;
   &:focus {
-    border-color: var(--accent-1);
+    border-color: var(--brand-light);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+    box-shadow: 0 0 0 3px rgba(168, 55, 44, 0.12);
   }
 `;
 
 export const PrimaryButton = styled.button`
-  background: linear-gradient(120deg, var(--accent-0), var(--accent-1));
-  color: white;
+  background: linear-gradient(135deg, var(--brand-dark), var(--brand-light));
+  color: #fff;
   border: none;
   padding: 0.9rem 1.2rem;
   border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease;
   font-size: 1rem;
+  box-shadow: 0 4px 14px rgba(168, 55, 44, 0.3);
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(29, 78, 216, 0.2);
+    opacity: 0.92;
+    box-shadow: 0 6px 18px rgba(168, 55, 44, 0.35);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
   }
 `;
 
@@ -150,6 +157,32 @@ export const ChipButton = styled.button`
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
+  }
+`;
+
+export const FileUploadWrapper = styled.label`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 16px;
+  background: var(--bg-2);
+  border: 2px dashed var(--border-0);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  text-align: center;
+  width: 100%;
+
+  .icon { font-size: 1.5rem; color: var(--ink-3); }
+  .label { font-weight: 700; font-size: 0.9rem; color: var(--ink-1); }
+  .hint { font-size: 0.8rem; color: var(--ink-2); }
+
+  &:hover {
+    border-color: var(--brand-light);
+    background: rgba(168, 55, 44, 0.04);
+    .icon { color: var(--brand-light); }
   }
 `;
 

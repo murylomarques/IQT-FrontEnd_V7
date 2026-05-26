@@ -1,39 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { FiUpload, FiCheck, FiX, FiCheckCircle, FiAlertTriangle, FiClock } from 'react-icons/fi';
 import {
-    ItemCard, ItemHeader, ItemSection, Label, ObservationText,
-    ImageLink, ImagePreview, Divider, StatusBadge, FileInputContainer,
-    FileInputLabel, SubmitButton, ApproveButton, ReproveButton
+    ItemCard, ItemHeader, ItemIndex, ItemTitle, StatusBadge,
+    ItemBody, Label, ObservationText,
+    PhotoRow, PhotoCol, ImageLink, ImagePreview, NoPhoto, UploadZone,
+    RejectedNote, ApprovedNote,
+    ItemFooter, SubmitButton, ApproveButton, ReproveButton,
 } from './styles';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
 
-const ItemCorrecao = ({ item, onItemUpdate, isSubmitting }) => {
+const STATUS_ICON = {
+    'Aprovado':   <FiCheckCircle />,
+    'Reprovado':  <FiAlertTriangle />,
+    'Em Análise': <FiClock />,
+};
+
+const ItemCorrecao = ({ item, index, total, onItemUpdate, isSubmitting }) => {
     const { user } = useAuth();
     const [fotoCorrecao, setFotoCorrecao] = useState(null);
     const [preview, setPreview] = useState(null);
 
-    // Limpa o preview quando o item muda (após um update)
     useEffect(() => {
         setFotoCorrecao(null);
+        if (preview) URL.revokeObjectURL(preview);
         setPreview(null);
     }, [item]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            setFotoCorrecao(file);
-            // Limpa o preview antigo antes de criar um novo
-            if (preview) {
-                URL.revokeObjectURL(preview);
-            }
-            setPreview(URL.createObjectURL(file));
-        }
+        if (!file) return;
+        setFotoCorrecao(file);
+        if (preview) URL.revokeObjectURL(preview);
+        setPreview(URL.createObjectURL(file));
     };
 
     const handleSubmitCorrecao = () => {
         if (!fotoCorrecao) {
-            alert("Por favor, anexe a foto da correção.");
+            alert('Por favor, anexe a foto da correção.');
             return;
         }
         onItemUpdate(item.id, { foto_correcao: fotoCorrecao, action: 'resolver' });
@@ -44,78 +49,112 @@ const ItemCorrecao = ({ item, onItemUpdate, isSubmitting }) => {
     };
 
     const baseURL = `${API_BASE_URL}/storage/`;
+    const statusCorrecao = item.status_correcao || 'Pendente';
+    const isTerceirizado = user.role === 'terceirizado';
+    const isAdmin = user.role === 'admin';
+    const canSubmit = (isTerceirizado || isAdmin) && statusCorrecao !== 'Em Análise' && statusCorrecao !== 'Aprovado';
+    const canReview = isAdmin && statusCorrecao === 'Em Análise';
 
     return (
-        <ItemCard>
-            <ItemHeader>{item.item_key.replace(/_/g, ' ')}</ItemHeader>
-            
-            <ItemSection>
-                <Label>Observação do Fiscal:</Label>
-                <ObservationText>{item.observacao || 'Nenhuma.'}</ObservationText>
-            </ItemSection>
-
-            {item.foto_path && (
-                <ItemSection>
-                    <Label>Foto do Problema:</Label>
-                    <ImageLink href={baseURL + item.foto_path} target="_blank" rel="noopener noreferrer">
-                        <ImagePreview src={baseURL + item.foto_path} alt="Foto do Problema" />
-                    </ImageLink>
-                </ItemSection>
-            )}
-
-            <Divider />
-
-            {/* Lógica de renderização baseada no cargo do usuário */}
-            
-            {/* Visão do Terceirizado */}
-            {(user.role === 'terceirizado' || user.role === 'admin') && (
-                <div>
-                    <Label>Status da Correção:</Label>
-                    <StatusBadge status={item.status_correcao}>{item.status_correcao}</StatusBadge>
-                    {item.status_correcao === 'Reprovado' && <p style={{color: 'red', fontWeight: 500}}>Sua correção foi reprovada. Por favor, envie uma nova foto.</p>}
-                    
-                    {/* Input de arquivo e preview */}
-                    <FileInputContainer>
-                        <FileInputLabel htmlFor={`file-input-${item.id}`}>
-                            Selecionar Foto da Correção
-                        </FileInputLabel>
-                        <input id={`file-input-${item.id}`} type="file" accept="image/*" onChange={handleFileChange} hidden />
-                    </FileInputContainer>
-                    
-                    {preview && <ImagePreview src={preview} alt="Pré-visualização da Correção" style={{ marginTop: '1rem' }} />}
-
-                    {/* Botão de Enviar Correção */}
-                    <div style={{marginTop: '1.5rem'}}>
-                        <SubmitButton onClick={handleSubmitCorrecao} disabled={isSubmitting || !fotoCorrecao || item.status_correcao === 'Em Análise'}>
-                            {isSubmitting ? 'Enviando...' : 'Enviar Correção'}
-                        </SubmitButton>
-                    </div>
+        <ItemCard statusCorrecao={statusCorrecao}>
+            <ItemHeader>
+                <div className="left">
+                    <ItemIndex>{index}/{total}</ItemIndex>
+                    <ItemTitle>{item.item_key.replace(/_/g, ' ')}</ItemTitle>
                 </div>
-            )}
-            
-            <Divider />
+                <StatusBadge status={statusCorrecao}>
+                    {STATUS_ICON[statusCorrecao]}
+                    {statusCorrecao}
+                </StatusBadge>
+            </ItemHeader>
 
-            {/* Visão do Admin */}
-            {user.role === 'admin' && (
-                 <div>
-                    <Label>Avaliação do Administrador</Label>
-                    {item.foto_correcao_path ? (
-                        <ItemSection>
-                            <Label>Foto da Correção Enviada:</Label>
-                             <ImageLink href={baseURL + item.foto_correcao_path} target="_blank" rel="noopener noreferrer">
+            <ItemBody>
+                <Label>Observação do Fiscal</Label>
+                <ObservationText>
+                    {item.observacao || 'Nenhuma observação registrada.'}
+                </ObservationText>
+
+                <PhotoRow>
+                    {/* Foto do problema (fiscal) */}
+                    <PhotoCol>
+                        <Label>Foto do Problema</Label>
+                        {item.foto_path ? (
+                            <ImageLink href={baseURL + item.foto_path} target="_blank" rel="noopener noreferrer">
+                                <ImagePreview src={baseURL + item.foto_path} alt="Foto do Problema" />
+                            </ImageLink>
+                        ) : (
+                            <NoPhoto>Sem foto</NoPhoto>
+                        )}
+                    </PhotoCol>
+
+                    {/* Foto da correção / upload */}
+                    <PhotoCol>
+                        <Label>Foto da Correção</Label>
+                        {preview ? (
+                            <ImageLink as="div">
+                                <ImagePreview src={preview} alt="Pré-visualização" />
+                            </ImageLink>
+                        ) : item.foto_correcao_path ? (
+                            <ImageLink href={baseURL + item.foto_correcao_path} target="_blank" rel="noopener noreferrer">
                                 <ImagePreview src={baseURL + item.foto_correcao_path} alt="Foto da Correção" />
                             </ImageLink>
-                        </ItemSection>
-                    ) : <p>Aguardando envio da foto de correção pelo terceirizado.</p>}
-                    
-                    {item.status_correcao === 'Em Análise' && (
-                        <div style={{marginTop: '1rem'}}>
-                            <ApproveButton onClick={() => handleAvaliacao('Aprovado')} disabled={isSubmitting}>Aprovar</ApproveButton>
-                            <ReproveButton onClick={() => handleAvaliacao('Reprovado')} disabled={isSubmitting}>Reprovar</ReproveButton>
-                        </div>
-                    )}
-                </div>
-            )}
+                        ) : canSubmit ? (
+                            <UploadZone htmlFor={`file-${item.id}`}>
+                                <FiUpload />
+                                <span>Clique para anexar</span>
+                                <span className="hint">JPG, PNG, WEBP</span>
+                            </UploadZone>
+                        ) : (
+                            <NoPhoto>Aguardando envio</NoPhoto>
+                        )}
+                        <input
+                            id={`file-${item.id}`}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            hidden
+                        />
+                    </PhotoCol>
+                </PhotoRow>
+
+                {statusCorrecao === 'Reprovado' && (
+                    <RejectedNote>
+                        <FiAlertTriangle />
+                        Correção reprovada. Envie uma nova foto para reavaliação.
+                    </RejectedNote>
+                )}
+            </ItemBody>
+
+            <ItemFooter>
+                {statusCorrecao === 'Aprovado' && (
+                    <ApprovedNote>
+                        <FiCheckCircle /> Item aprovado
+                    </ApprovedNote>
+                )}
+
+                {canSubmit && (
+                    <SubmitButton
+                        onClick={handleSubmitCorrecao}
+                        disabled={isSubmitting || !fotoCorrecao}
+                    >
+                        <FiUpload />
+                        {isSubmitting ? 'Enviando...' : 'Enviar Correção'}
+                    </SubmitButton>
+                )}
+
+                {canReview && (
+                    <>
+                        <ReproveButton onClick={() => handleAvaliacao('Reprovado')} disabled={isSubmitting}>
+                            <FiX />
+                            Reprovar
+                        </ReproveButton>
+                        <ApproveButton onClick={() => handleAvaliacao('Aprovado')} disabled={isSubmitting}>
+                            <FiCheck />
+                            Aprovar
+                        </ApproveButton>
+                    </>
+                )}
+            </ItemFooter>
         </ItemCard>
     );
 };

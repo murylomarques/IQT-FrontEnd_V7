@@ -1,48 +1,65 @@
 import styled from 'styled-components';
 
 export const ItemContainer = styled.div`
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1rem;
-  align-items: center;
-  padding: 1.25rem 0.5rem;
-  border-bottom: 1px solid #f0f2f5;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-1);
+
   &:last-child {
     border-bottom: none;
-  }
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
   }
 `;
 
 export const ItemLabel = styled.span`
-  font-size: 1rem;
-  color: #34495e;
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-1);
+  margin-bottom: 10px;
+  line-height: 1.45;
 `;
 
 export const RadioGroup = styled.div`
   display: flex;
-  gap: 0.5rem;
-  background-color: #f7f9fc;
-  border-radius: 8px;
-  padding: 0.25rem;
+  flex-wrap: wrap;
+  gap: 8px;
 `;
 
 export const RadioLabel = styled.label`
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border-0);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font-weight: 700;
+  font-size: 0.85rem;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: ${({ checked }) => (checked ? '#fff' : '#7f8c8d')};
-  background-color: ${({ checked, value }) => {
-    if (!checked) return 'transparent';
-    if (value === 'Conforme') return '#2ecc71';
-    if (value === 'Não Conforme') return '#e74c3c';
-    return '#95a5a6';
-  }};
-  transition: all 0.2s ease-in-out;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+  user-select: none;
+
+  &[data-checked="true"][data-tone="conforme"] {
+    background: rgba(22, 163, 74, 0.12);
+    border-color: rgba(22, 163, 74, 0.45);
+    color: var(--success);
+  }
+
+  &[data-checked="true"][data-tone="nao-conforme"] {
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(220, 38, 38, 0.45);
+    color: var(--danger);
+  }
+
+  &[data-checked="true"][data-tone="na"] {
+    background: rgba(100, 116, 139, 0.12);
+    border-color: rgba(100, 116, 139, 0.45);
+    color: var(--ink-2);
+  }
+
+  &:hover {
+    border-color: var(--brand-light);
+    background: rgba(168, 55, 44, 0.05);
+  }
 `;
 
 export const HiddenRadio = styled.input.attrs({ type: 'radio' })`
@@ -53,52 +70,72 @@ export const HiddenRadio = styled.input.attrs({ type: 'radio' })`
 `;
 
 export const ConditionalInputsWrapper = styled.div`
-  grid-column: 1 / -1;
-  padding: 1rem;
-  background-color: #f7f9fc;
-  border-radius: 8px;
-  margin-top: 1rem;
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--bg-2);
+  border-radius: var(--radius-1);
+  border: 1px solid var(--border-1);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 12px;
 `;
 
 export const ItemTextArea = styled.textarea`
   width: 100%;
-  min-height: 80px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #dce4ec;
-  border-radius: 6px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-0);
+  border-radius: 10px;
   font-size: 0.9rem;
   resize: vertical;
+  background: var(--bg-1);
+  color: var(--ink-1);
+  font-family: inherit;
+
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
+    border-color: var(--brand-light);
+    box-shadow: 0 0 0 3px rgba(168, 55, 44, 0.12);
   }
 `;
 
 export const FileInputLabel = styled.label`
-  padding: 0.5rem 1rem;
-  background-color: #3498db;
-  color: white;
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--brand-dark), var(--brand-light));
+  color: #fff;
+  border-radius: 10px;
   cursor: pointer;
-  text-align: center;
-  transition: background-color 0.2s;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: opacity 0.15s ease;
+
   &:hover {
-    background-color: #2980b9;
+    opacity: 0.9;
   }
 `;
 
 export const FileName = styled.span`
-  margin-left: 1rem;
+  margin-left: 10px;
+  font-size: 0.85rem;
   font-style: italic;
-  color: #555;
+  color: var(--ink-2);
 `;
 
 export const ImagePreview = styled.img`
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: 6px;
-  margin-top: 0.5rem;
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: 10px;
+  margin-top: 8px;
+  border: 1px solid var(--border-0);
+  object-fit: cover;
+`;
+
+export const RequiredNote = styled.p`
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 6px 0 0;
 `;

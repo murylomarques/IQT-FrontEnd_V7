@@ -12,7 +12,9 @@ import {
   TextArea,
   SubmitButton,
   TypeSelectorGrid,
-  TypeButton
+  TypeButton,
+  MetrosField,
+  AddPosteButton,
 } from './styles';
 
 import {
@@ -46,6 +48,7 @@ const VistoriaDetalhe = () => {
 
   // 🔹 PERGUNTA NOVA
   const [retornoTecnico, setRetornoTecnico] = useState(null);
+  const [metros_drop, setMetrosDrop] = useState('');
 
   const [isFormValid, setIsFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,10 +96,13 @@ const VistoriaDetalhe = () => {
       return true;
     });
 
-    // 🔹 agora também exige resposta do retorno técnico
-    setIsFormValid(checklistOk && !!retornoTecnico);
+    const requiresMetros = vistoriaType === 'completa' || vistoriaType === 'externa';
+    const metrosOk = !requiresMetros || (metros_drop !== '' && Number(metros_drop) >= 0);
 
-  }, [vistoriaType, checklistValues, postePassagemCount, retornoTecnico]);
+    // 🔹 também exige retorno técnico e metros_drop quando aplicável
+    setIsFormValid(checklistOk && !!retornoTecnico && metrosOk);
+
+  }, [vistoriaType, checklistValues, postePassagemCount, retornoTecnico, metros_drop]);
 
   // -------------------------
   // LOAD
@@ -136,6 +142,10 @@ const VistoriaDetalhe = () => {
     // 🔹 envio da resposta nova
     formData.append("retorno_tecnico", retornoTecnico);
 
+    if (vistoriaType === 'completa' || vistoriaType === 'externa') {
+      formData.append("metros_drop", metros_drop);
+    }
+
     Object.entries(checklistValues).forEach(([key, val]) => {
       formData.append(`checklist[${key}][status]`, val.status);
 
@@ -162,8 +172,7 @@ const VistoriaDetalhe = () => {
       navigate("/fiscal");
 
     } catch (err) {
-      console.error(err);
-      toast.error("Erro ao enviar.");
+      toast.error(err?.message || "Erro ao enviar.");
     } finally {
       setIsSubmitting(false);
     }
@@ -203,10 +212,44 @@ const VistoriaDetalhe = () => {
         <SectionCard>
           <SectionTitle>Tipo de Vistoria</SectionTitle>
           <TypeSelectorGrid>
-            <TypeButton type="button" active={vistoriaType === "completa"} onClick={() => setVistoriaType("completa")}>Completa</TypeButton>
-            <TypeButton type="button" active={vistoriaType === "externa"} onClick={() => setVistoriaType("externa")}>Externa</TypeButton>
-            <TypeButton type="button" active={vistoriaType === "interna"} onClick={() => setVistoriaType("interna")}>Interna</TypeButton>
+            <TypeButton type="button" active={vistoriaType === "completa"} onClick={() => { setVistoriaType("completa"); setMetrosDrop(''); }}>Completa</TypeButton>
+            <TypeButton type="button" active={vistoriaType === "externa"} onClick={() => { setVistoriaType("externa"); setMetrosDrop(''); }}>Externa</TypeButton>
+            <TypeButton type="button" active={vistoriaType === "interna"} onClick={() => { setVistoriaType("interna"); setMetrosDrop(''); }}>Interna</TypeButton>
           </TypeSelectorGrid>
+
+          {vistoriaType === 'completa' && (
+            <MetrosField>
+              <label>Quantos metros de drop foram lançados até a residência do cliente?</label>
+              <div>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={metros_drop}
+                  onChange={e => setMetrosDrop(e.target.value)}
+                />
+                <span>metros</span>
+              </div>
+            </MetrosField>
+          )}
+
+          {vistoriaType === 'externa' && (
+            <MetrosField>
+              <label>Quantos metros de drop foram lançados até o PTR?</label>
+              <div>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={metros_drop}
+                  onChange={e => setMetrosDrop(e.target.value)}
+                />
+                <span>metros</span>
+              </div>
+            </MetrosField>
+          )}
         </SectionCard>
 
         {/* RETORNO DO TÉCNICO */}
@@ -254,9 +297,9 @@ const VistoriaDetalhe = () => {
             })}
 
             {postePassagemCount < MAX_POSTES && (
-              <button type="button" onClick={() => setPostePassagemCount(v => v + 1)}>
+              <AddPosteButton type="button" onClick={() => setPostePassagemCount(v => v + 1)}>
                 + Adicionar Poste de Passagem
-              </button>
+              </AddPosteButton>
             )}
           </SectionCard>
         )}

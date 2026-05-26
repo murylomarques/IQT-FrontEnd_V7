@@ -1,106 +1,92 @@
 import React, { useState, useEffect } from 'react';
+import { FiUpload } from 'react-icons/fi';
 import {
   ItemContainer, ItemLabel, RadioGroup, RadioLabel, HiddenRadio,
-  ConditionalInputsWrapper, ItemTextArea, FileInputLabel, FileName, ImagePreview
+  ConditionalInputsWrapper, ItemTextArea, FileInputLabel, FileName, ImagePreview, RequiredNote
 } from './styles';
 
 const ChecklistItem = ({ label, itemKey, value, onChange }) => {
-
   const { status, observacao, foto } = value;
   const [preview, setPreview] = useState(null);
 
   useEffect(() => {
-    if (!foto) {
-      setPreview(null);
-      return;
-    }
+    if (!foto) { setPreview(null); return; }
     const url = URL.createObjectURL(foto);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [foto]);
 
   const handleStatusChange = (v) => {
-    onChange(itemKey, "status", v);
-
-    if (v !== "Não Conforme") {
-      onChange(itemKey, "foto", null);
-    }
+    onChange(itemKey, 'status', v);
+    if (v !== 'Não Conforme') onChange(itemKey, 'foto', null);
   };
 
   return (
     <ItemContainer>
       <ItemLabel>{label}</ItemLabel>
 
-      {/* radios */}
       <RadioGroup>
-        <RadioLabel checked={status === "Conforme"}>
+        <RadioLabel data-checked={status === 'Conforme' ? 'true' : 'false'} data-tone="conforme">
           <HiddenRadio
-            type="radio"
             name={itemKey}
             value="Conforme"
-            checked={status === "Conforme"}
-            onChange={() => handleStatusChange("Conforme")}
+            checked={status === 'Conforme'}
+            onChange={() => handleStatusChange('Conforme')}
           />
           Conforme
         </RadioLabel>
 
-        <RadioLabel checked={status === "Não Conforme"}>
+        <RadioLabel data-checked={status === 'Não Conforme' ? 'true' : 'false'} data-tone="nao-conforme">
           <HiddenRadio
-            type="radio"
             name={itemKey}
             value="Não Conforme"
-            checked={status === "Não Conforme"}
-            onChange={() => handleStatusChange("Não Conforme")}
+            checked={status === 'Não Conforme'}
+            onChange={() => handleStatusChange('Não Conforme')}
           />
           Não Conforme
         </RadioLabel>
 
-        <RadioLabel checked={status === "Não se Aplica"}>
+        <RadioLabel data-checked={status === 'Não se Aplica' ? 'true' : 'false'} data-tone="na">
           <HiddenRadio
-            type="radio"
             name={itemKey}
             value="Não se Aplica"
-            checked={status === "Não se Aplica"}
-            onChange={() => handleStatusChange("Não se Aplica")}
+            checked={status === 'Não se Aplica'}
+            onChange={() => handleStatusChange('Não se Aplica')}
           />
           Não se Aplica
         </RadioLabel>
       </RadioGroup>
 
-      {(status === "Conforme" || status === "Não Conforme") && (
+      {(status === 'Conforme' || status === 'Não Conforme') && (
         <ConditionalInputsWrapper>
-          
           <ItemTextArea
             placeholder="Adicionar observação (opcional)..."
-            value={observacao || ""}
-            onChange={e => onChange(itemKey, "observacao", e.target.value)}
+            value={observacao || ''}
+            onChange={e => onChange(itemKey, 'observacao', e.target.value)}
           />
 
-          <div style={{ marginTop: 10 }}>
+          <div>
             <FileInputLabel>
-              {foto ? "Trocar Foto" : "Enviar Foto"}
+              <FiUpload />
+              {foto ? 'Trocar Foto' : 'Enviar Foto'}
               <input
                 type="file"
                 accept="image/*"
                 hidden
                 onChange={(e) => {
-                  if (e.target.files[0]) {
-                    onChange(itemKey, "foto", e.target.files[0]);
-                  }
+                  if (e.target.files[0]) onChange(itemKey, 'foto', e.target.files[0]);
                 }}
               />
             </FileInputLabel>
 
-            {status === "Não Conforme" && !foto && (
-              <p style={{ color: "red", fontSize: 13 }}>
-                Foto obrigatória em itens "Não Conforme"
-              </p>
+            {status === 'Não Conforme' && !foto && (
+              <RequiredNote>Foto obrigatória em itens "Não Conforme"</RequiredNote>
             )}
 
             {foto && <FileName>{foto.name}</FileName>}
           </div>
 
-          {preview && <ImagePreview src={preview} />}
+          {preview && <ImagePreview src={preview} alt="preview" />}
         </ConditionalInputsWrapper>
       )}
     </ItemContainer>

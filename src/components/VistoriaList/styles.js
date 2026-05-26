@@ -1,75 +1,84 @@
-// src/components/VistoriaList/styles.js
-
 import styled from 'styled-components';
 
 export const ListContainer = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
-// Transformando o ListItem em um "Card"
 export const ListItem = styled.li`
-  background-color: #fff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: 1rem;
+  background: var(--bg-1);
+  padding: 18px 20px;
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--border-0);
+  border-left: 4px solid var(--brand);
   cursor: pointer;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  border-left: 5px solid ${({ theme }) => theme.colors.primary};
+  transition: box-shadow 0.15s ease, border-left-color 0.15s ease;
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-2);
+    border-left-color: var(--brand-dark);
+  }
+
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+    border-radius: var(--radius-1);
   }
 `;
 
 export const EmptyMessage = styled.p`
   text-align: center;
-  padding: 2rem;
-  color: #777;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  padding: 2.5rem 1.5rem;
+  color: var(--ink-2);
+  background: var(--bg-1);
+  border-radius: var(--radius-2);
+  border: 1px dashed var(--border-0);
+  font-size: 0.95rem;
+  margin: 0;
 `;
 
-// ==========================================================
-// ==================== INÍCIO DA ALTERAÇÃO ===================
-// ==========================================================
-
-// Título principal do Card (Nome do Cliente)
 export const CardTitle = styled.h3`
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #333;
-  margin-top: 0;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #eee;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-0);
+  margin: 0 0 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-1);
 `;
 
-// Grid para organizar as informações em colunas
 export const InfoGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Cria 2 colunas de largura igual */
-  gap: 0.75rem 1.5rem; /* Espaçamento: 0.75rem vertical, 1.5rem horizontal */
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
-// ==========================================================
-// ===================== FIM DA ALTERAÇÃO =====================
-// ==========================================================
-
 export const Info = styled.div`
-  font-size: 0.9rem;
-  color: #555;
+  font-size: 0.88rem;
+  color: var(--ink-1);
   display: flex;
-  flex-direction: column; /* Coloca o label em cima do valor */
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  & > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 `;
 
 export const Label = styled.span`
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px; /* Pequeno espaço entre o label e o valor */
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--ink-2);
 `;

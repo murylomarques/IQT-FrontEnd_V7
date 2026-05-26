@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
 import { SectionCard, SectionTitle, FormGrid, PrimaryButton } from '../../styles/GlobalStyle';
-import { Input, RadioGroup, Label } from './styles';
+import { Input, Select, TextArea, RadioGroup, Label, ChipButton, ChipGroup, ChipNote, FileUploadWrapper } from './styles';
 
 // Função 1: Redimensiona a imagem e retorna File
 const resizeImageFile = (file, options = { maxWidth: 1920, maxHeight: 1920, quality: 0.75 }) => {
@@ -563,68 +563,55 @@ const VistoriaSeguranca = () => {
                     {disabled && <span style={{ marginLeft: 8, fontSize: 12 }}>(auto: Não se Aplica)</span>}
                   </Label>
 
-                  <div>
-                    {/* SIM */}
-                    <input
-                      type="radio"
-                      id={`${name}_sim`}
-                      name={name}
-                      value="Sim"
-                      onChange={handleChange}
-                      required
-                      disabled={false}
-                      checked={formData[name] === 'Sim'}
-                    />
-                    <label htmlFor={`${name}_sim`}>Sim</label>
+                  <ChipGroup>
+                    <ChipButton
+                      type="button"
+                      data-active={String(formData[name] === 'Sim')}
+                      data-tone="yes"
+                      onClick={() => handleChange({ target: { name, value: 'Sim' } })}
+                    >
+                      Sim
+                    </ChipButton>
 
-                    {/* NÃO */}
-                    <input
-                      type="radio"
-                      id={`${name}_nao`}
-                      name={name}
-                      value="Não"
-                      onChange={handleChange}
-                      style={{ marginLeft: '1rem' }}
-                      required
-                      disabled={false}
-                      checked={formData[name] === 'Não'}
-                    />
-                    <label htmlFor={`${name}_nao`}>Não</label>
+                    <ChipButton
+                      type="button"
+                      data-active={String(formData[name] === 'Não')}
+                      data-tone="no"
+                      onClick={() => handleChange({ target: { name, value: 'Não' } })}
+                    >
+                      Não
+                    </ChipButton>
 
-                    {/* ✅ Só mostra "Não se Aplica" quando allowNA = true */}
                     {allowNA && (
-                      <>
-                        <input
-                          type="radio"
-                          id={`${name}_na`}
-                          name={name}
-                          value="Não se Aplica"
-                          onChange={handleChange}
-                          style={{ marginLeft: '1rem' }}
-                          disabled={disabled}
-                          checked={formData[name] === 'Não se Aplica'}
-                        />
-                        <label htmlFor={`${name}_na`}>Não se Aplica</label>
-                      </>
+                      <ChipButton
+                        type="button"
+                        data-active={String(formData[name] === 'Não se Aplica')}
+                        data-tone="na"
+                        disabled={disabled}
+                        onClick={() => !disabled && handleChange({ target: { name, value: 'Não se Aplica' } })}
+                      >
+                        Não se Aplica
+                      </ChipButton>
                     )}
-                  </div>
+
+                    {disabled && <ChipNote>(auto: Não se Aplica)</ChipNote>}
+                  </ChipGroup>
 
                   {/* Motivo só aparece se atividade_externa = "Não" */}
                   {isAtividadeExterna && formData.atividade_externa === 'Não' && (
                     <div style={{ marginTop: '12px' }}>
                       <Label>Por qual motivo o técnico não estava em atividade externa?</Label>
-                      <select
+                      <Select
                         name="motivo_sem_atividade_externa"
                         value={formData.motivo_sem_atividade_externa}
                         onChange={handleChange}
                         required
-                        style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
                       >
                         <option value="">Selecione o motivo</option>
                         {motivosSemExterna.map(m => (
                           <option key={m} value={m}>{m}</option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                   )}
                 </RadioGroup>
@@ -636,22 +623,22 @@ const VistoriaSeguranca = () => {
             <FormGrid>
               <div>
                 <Label>Upload de Arquivos *</Label>
-                <input type="file" multiple onChange={handleFileChange} required accept="image/*,application/pdf" />
+                <FileUploadWrapper>
+                  <span className="icon">📎</span>
+                  <span className="label">
+                    {files.length > 0 ? `${files.length} arquivo(s) selecionado(s)` : 'Selecionar arquivos'}
+                  </span>
+                  <span className="hint">Imagens ou PDF</span>
+                  <input type="file" multiple onChange={handleFileChange} required accept="image/*,application/pdf" hidden />
+                </FileUploadWrapper>
               </div>
 
-              <textarea
+              <TextArea
                 name="observacoes"
                 value={formData.observacoes}
                 onChange={handleChange}
-                placeholder="Observações"
-                style={{
-                  minHeight: '100px',
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #ccc',
-                  borderRadius: '5px',
-                  gridColumn: '1 / -1'
-                }}
+                placeholder="Observações (opcional)"
+                className="full-width"
               />
             </FormGrid>
 

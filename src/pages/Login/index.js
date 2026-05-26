@@ -19,8 +19,9 @@ import {
 } from './styles';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('iqt_remembered_email') || '');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('iqt_remembered_email'));
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
@@ -261,6 +262,11 @@ const Login = () => {
 
     try {
       await login(email, password);
+      if (rememberMe) {
+        localStorage.setItem('iqt_remembered_email', email);
+      } else {
+        localStorage.removeItem('iqt_remembered_email');
+      }
     } catch (error) {
       // handled in auth context
     } finally {
@@ -387,7 +393,31 @@ const Login = () => {
             />
           </InputGroup>
 
-          <StyledLink href="#">Esqueci minha senha</StyledLink>
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontSize: 13, color: '#6b7280', cursor: 'pointer', userSelect: 'none',
+          }}>
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => {
+                setRememberMe(e.target.checked);
+                if (!e.target.checked) localStorage.removeItem('iqt_remembered_email');
+              }}
+              style={{ width: 16, height: 16, accentColor: '#a8372c', cursor: 'pointer' }}
+            />
+            Lembrar meu e-mail
+          </label>
+
+          <StyledLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              toast.info('Para redefinir sua senha, entre em contato com o administrador do sistema.');
+            }}
+          >
+            Esqueci minha senha
+          </StyledLink>
 
           <GradientButton type="submit" disabled={isLoading}>
             {isLoading ? <ButtonSpinner /> : 'Entrar'}
@@ -423,12 +453,14 @@ const Login = () => {
             onSubmit={handleAccessRequestSubmit}
             style={{
               width: '100%',
-              maxWidth: 520,
+              maxWidth: 'min(520px, 94vw)',
               background: '#fff',
               borderRadius: 16,
               padding: 20,
               display: 'grid',
               gap: 12,
+              maxHeight: '90vh',
+              overflowY: 'auto',
             }}
           >
             <h3 style={{ margin: 0, color: '#531110' }}>Solicitar acesso</h3>

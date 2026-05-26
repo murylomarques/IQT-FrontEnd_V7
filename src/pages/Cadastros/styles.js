@@ -57,7 +57,7 @@ export const SubmitButton = styled.button`
   padding: 12px 14px;
   border: none;
   border-radius: 10px;
-  background-image: linear-gradient(120deg, var(--accent-0), var(--accent-1));
+  background: linear-gradient(120deg, var(--brand-dark), var(--brand-light));
   color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
@@ -67,7 +67,7 @@ export const SubmitButton = styled.button`
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(29, 78, 216, 0.2);
+    box-shadow: 0 10px 20px rgba(168, 55, 44, 0.25);
   }
 `;
 
@@ -95,8 +95,8 @@ export const FormGroup = styled.div`
 
     &:focus {
       outline: none;
-      border-color: var(--accent-1);
-      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+      border-color: var(--brand-light);
+      box-shadow: 0 0 0 3px rgba(168, 55, 44, 0.15);
     }
   }
 
@@ -105,7 +105,7 @@ export const FormGroup = styled.div`
     left: 12px;
     top: calc(50% + 9px);
     transform: translateY(-50%);
-    color: var(--accent-0);
+    color: var(--brand);
     pointer-events: none;
   }
 `;
@@ -133,7 +133,7 @@ export const ExportButton = styled.button`
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background-color: var(--accent-0);
+  background-color: var(--brand);
   color: white;
   border: none;
   border-radius: 10px;
@@ -144,7 +144,7 @@ export const ExportButton = styled.button`
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(29, 78, 216, 0.2);
+    box-shadow: 0 8px 18px rgba(168, 55, 44, 0.25);
   }
 `;
 
@@ -236,7 +236,7 @@ export const DateField = styled.div`
   svg {
     position: absolute;
     left: 10px;
-    color: var(--accent-0);
+    color: var(--brand);
     pointer-events: none;
   }
 

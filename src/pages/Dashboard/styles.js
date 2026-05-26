@@ -146,10 +146,10 @@ export const Card = styled.div`
   grid-area: ${({ area }) => area};
   display: flex;
   flex-direction: column;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  position: relative;
+  transition: box-shadow 0.15s ease;
 
   &:hover {
-    transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   }
 `;
@@ -215,20 +215,13 @@ export const Skeleton = styled.div`
 
 // Sobreposição para o aviso "Em Desenvolvimento"
 export const DevelopmentWarning = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.75);
+  flex: 1;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  border-radius: var(--radius-2); 
-  z-index: 10;
-  backdrop-filter: blur(2px);
 
   svg {
     font-size: 2.5rem;
@@ -238,6 +231,44 @@ export const DevelopmentWarning = styled.div`
   p {
     font-weight: 600;
     color: var(--ink-2);
+  }
+`;
+
+export const DevCover = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  height: calc(100vh - 160px);
+  background: var(--bg-1);
+  border: 1px solid var(--border-0);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+
+  .icon-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: var(--warning-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--warning);
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--ink-0);
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: var(--ink-2);
+    margin: 0;
   }
 `;
 

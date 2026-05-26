@@ -34,6 +34,10 @@ const Mensagens = () => {
   const [search, setSearch] = useState('');
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [alertModal, setAlertModal] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertBody, setAlertBody] = useState('');
+  const [isSendingAlert, setIsSendingAlert] = useState(false);
   const messagesRef = useRef(null);
   const isPollingConversationRef = useRef(false);
 
@@ -173,30 +177,37 @@ const Mensagens = () => {
     }
   };
 
-  const handleSendAlert = async () => {
+  const handleSendAlert = () => {
     if (!selectedUser?.id) {
-      toast.warn('Selecione um usuario para enviar aviso.');
+      toast.warn('Selecione um usuário para enviar aviso.');
       return;
     }
+    setAlertTitle('Aviso importante');
+    setAlertBody('');
+    setAlertModal(true);
+  };
 
-    const title = window.prompt('Titulo do aviso:', 'Aviso importante');
-    if (!title || !title.trim()) return;
-    const body = window.prompt('Texto do aviso (opcional):', '');
-
+  const handleConfirmAlert = async (e) => {
+    e.preventDefault();
+    if (!alertTitle.trim()) { toast.error('Informe o título do aviso.'); return; }
+    setIsSendingAlert(true);
     try {
       await apiFetch('/api/notifications/send', {
         method: 'POST',
         data: {
           recipient_id: selectedUser.id,
-          title: title.trim(),
-          body: (body || '').trim() || null,
+          title: alertTitle.trim(),
+          body: alertBody.trim() || null,
           type: 'alert',
         },
       });
       toast.success('Aviso enviado com sucesso.');
+      setAlertModal(false);
       loadNotifications();
     } catch (error) {
       toast.error(error?.response?.data?.message || 'Erro ao enviar aviso.');
+    } finally {
+      setIsSendingAlert(false);
     }
   };
 
@@ -323,6 +334,47 @@ const Mensagens = () => {
           </Panel>
         </ChatPage>
       </ContentArea>
+      {alertModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: 16,
+        }}>
+          <form onSubmit={handleConfirmAlert} style={{
+            width: '100%', maxWidth: 'min(460px, 94vw)',
+            background: '#fff', borderRadius: 14, padding: 20,
+            display: 'grid', gap: 12,
+          }}>
+            <strong style={{ fontSize: 16, color: '#1a1a1a' }}>
+              Enviar aviso para {selectedUser?.nome}
+            </strong>
+            <input
+              placeholder="Título do aviso *"
+              value={alertTitle}
+              onChange={(e) => setAlertTitle(e.target.value)}
+              required
+              style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }}
+            />
+            <textarea
+              placeholder="Texto do aviso (opcional)"
+              value={alertBody}
+              onChange={(e) => setAlertBody(e.target.value)}
+              rows={3}
+              style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 14, resize: 'vertical' }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setAlertModal(false)} disabled={isSendingAlert}
+                style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={isSendingAlert}
+                style={{ padding: '9px 16px', borderRadius: 8, border: 'none', background: '#a8372c', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                {isSendingAlert ? 'Enviando...' : 'Enviar aviso'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </LayoutContainer>
   );
 };
