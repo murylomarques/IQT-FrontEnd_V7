@@ -4,25 +4,30 @@ import { toast } from 'react-toastify';
 import {
   FcaGlobal, FcaWrap, Topbar, BrandRow, BrandLogo, BrandMeta, SessionPill,
   Shell, AppLayout, SideNav, NavBtn, ContentArea,
-  PageTitle, Card, CardLabel, FGrid, Fld, Lbl, Sel, Btn,
+  PageTitle, Card, CardRow, CardLabel, Inp, Btn,
   TblWrap, Tbl, RBadge, WinBadge, MetricsRow, Metric, Empty,
 } from '../FCA/theme';
 import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
 
 const TABS = ['Minha Equipe', 'Vincular'];
 
-const DashboardCoordenador = () => {
-  const navigate = useNavigate();
-  const name     = fcaStorage.get('name') || 'Coordenador';
-  const role     = fcaStorage.get('role');
-  const myId     = fcaStorage.get('id');
+const isCorporativo = (empresa) =>
+  empresa && empresa.toLowerCase().includes('corporativo');
 
-  const [tab,          setTab]      = useState('Minha Equipe');
-  const [subordinates, setSubs]     = useState([]);
-  const [available,    setAvailable]= useState([]);
-  const [winData,      setWinData]  = useState(null);
-  const [linkChild,    setLinkChild]= useState('');
-  const [loading,      setLoading]  = useState(false);
+const DashboardCoordenador = () => {
+  const navigate   = useNavigate();
+  const name       = fcaStorage.get('name') || 'Coordenador';
+  const role       = fcaStorage.get('role');
+  const myId       = fcaStorage.get('id');
+  const myRegional = (fcaStorage.get('regional') || '').toLowerCase();
+
+  const [tab,          setTab]       = useState('Minha Equipe');
+  const [subordinates, setSubs]      = useState([]);
+  const [available,    setAvailable] = useState([]);
+  const [winData,      setWinData]   = useState(null);
+  const [selected,     setSelected]  = useState([]);
+  const [linkSearch,   setLinkSearch]= useState('');
+  const [loading,      setLoading]   = useState(false);
 
   useEffect(() => {
     if (!fcaStorage.get('token') || role !== 'coordenacao') navigate('/login/GH');
@@ -45,23 +50,54 @@ const DashboardCoordenador = () => {
 
   const totalTecnicos = subordinates.reduce((acc, s) => acc + (s.subordinates?.length || 0), 0);
 
-  const handleLink = async (e) => {
-    e.preventDefault();
-    if (!linkChild) { toast.error('Selecione um supervisor.'); return; }
+  // Filtra disponíveis: mesma regional OU corporativo OU sem regional
+  const filteredAvailable = available.filter((u) => {
+    const corp     = isCorporativo(u.empresa);
+    const uReg     = (u.regional || '').toLowerCase();
+    const regMatch = !myRegional || corp || !uReg || uReg === myRegional;
+    const srch     = linkSearch.toLowerCase();
+    const txtMatch = !srch ||
+      u.name.toLowerCase().includes(srch) ||
+      (u.employee_id || '').toLowerCase().includes(srch) ||
+      (u.cpf         || '').toLowerCase().includes(srch);
+    return regMatch && txtMatch;
+  });
+
+  const toggleSelect = (id) =>
+    setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  const toggleAll = () =>
+    setSelected(selected.length === filteredAvailable.length ? [] : filteredAvailable.map((u) => u.id));
+
+  const handleLinkMultiple = async () => {
+    if (selected.length === 0) return;
     setLoading(true);
     try {
-      const res = await fcaFetch('/fca/hierarchy/link', { method: 'POST', body: JSON.stringify({ parent_id: +myId, child_id: +linkChild }) });
-      toast.success(res.applied ? 'Vínculo criado.' : 'Solicitação enviada para aprovação.');
-      setLinkChild('');
-      loadData();
+      const res = await fcaFetch('/fca/hierarchy/bulk-link', {
+        method: 'POST',
+        body: JSON.stringify({ parent_id: +myId, child_ids: selected }),
+      });
+      if (res.linked > 0)
+        toast.success(winData?.status?.is_open
+          ? `${res.linked} vínculo(s) criado(s).`
+          : `${res.linked} solicitação(ões) enviada(s) para aprovação.`);
+      if (res.pending > 0)
+        toast.info(`${res.pending} solicitação(ões) enviada(s) para aprovação.`);
+      if (res.failed > 0)
+        toast.warn(`${res.failed} vínculo(s) não puderam ser criados.`);
     } catch (err) { toast.error(err.message); }
-    finally { setLoading(false); }
+    setSelected([]);
+    loadData();
+    setLoading(false);
   };
 
   const handleUnlink = async (childId) => {
     if (!window.confirm('Remover vínculo?')) return;
-    try { await fcaFetch(`/fca/hierarchy/unlink/${childId}`, { method: 'DELETE' }); toast.success('Vínculo removido.'); loadData(); }
-    catch (err) { toast.error(err.message); }
+    try {
+      await fcaFetch(`/fca/hierarchy/unlink/${childId}`, { method: 'DELETE' });
+      toast.success('Vínculo removido.');
+      loadData();
+    } catch (err) { toast.error(err.message); }
   };
 
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
@@ -132,8 +168,8 @@ const DashboardCoordenador = () => {
                     <Tbl>
                       <thead>
                         <tr>
-                          <th>Nome</th><th>Matrícula</th><th>Perfil</th>
-                          <th>Território</th><th>Técnicos</th><th>Ação</th>
+                          <th>Nome</th><th>Matrícula</th><th>Regional</th>
+                          <th>Empresa</th><th>Técnicos</th><th>Ação</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -141,8 +177,17 @@ const DashboardCoordenador = () => {
                           <tr key={u.id}>
                             <td><strong>{u.name}</strong></td>
                             <td style={{ color: '#9a948f' }}>{u.employee_id || '—'}</td>
-                            <td><RBadge $r={u.role}>{ROLE_LABELS[u.role] || u.role}</RBadge></td>
-                            <td>{u.territory || '—'}</td>
+                            <td>{u.regional || '—'}</td>
+                            <td>
+                              {u.empresa ? (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  background: isCorporativo(u.empresa) ? 'rgba(174,46,42,0.10)' : 'rgba(53,48,45,0.07)',
+                                  color: isCorporativo(u.empresa) ? '#ae2e2a' : '#5a5551',
+                                  borderRadius: 4, padding: '1px 7px',
+                                }}>{u.empresa}</span>
+                              ) : '—'}
+                            </td>
                             <td>
                               <span style={{ background: 'rgba(47,122,63,0.14)', color: '#1a5028', borderRadius: '999px', padding: '2px 10px', fontSize: '0.76rem', fontWeight: 700 }}>
                                 {u.subordinates?.length || 0} técnico{(u.subordinates?.length || 0) !== 1 ? 's' : ''}
@@ -170,40 +215,115 @@ const DashboardCoordenador = () => {
             {/* ── VINCULAR ── */}
             {tab === 'Vincular' && (
               <>
-                <PageTitle>Vincular <em>Supervisor</em></PageTitle>
-                <Card style={{ maxWidth: 500 }}>
-                  <CardLabel>Novo vínculo</CardLabel>
-                  {winData && (
-                    <div style={{ margin: '0.8rem 0 1rem' }}>
-                      <WinBadge $open={winData.status.is_open}>
-                        <span className="dot" />
-                        {winData.status.is_open ? 'Janela aberta — vínculo imediato' : 'Janela fechada — enviará para aprovação'}
-                      </WinBadge>
+                <PageTitle>Vincular <em>Supervisores</em></PageTitle>
+
+                {winData && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <WinBadge $open={winData.status.is_open}>
+                      <span className="dot" />
+                      {winData.status.is_open
+                        ? 'Janela aberta — vínculo imediato'
+                        : 'Janela fechada — enviará para aprovação'}
+                    </WinBadge>
+                  </div>
+                )}
+
+                <Card>
+                  <CardRow>
+                    <Inp
+                      style={{ flex: 1, maxWidth: 340, borderRadius: '999px' }}
+                      placeholder="🔍  Buscar nome ou matrícula..."
+                      value={linkSearch}
+                      onChange={(e) => { setLinkSearch(e.target.value); setSelected([]); }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '0.82rem', color: '#9a948f', whiteSpace: 'nowrap' }}>
+                        {selected.length} selecionado{selected.length !== 1 ? 's' : ''}
+                      </span>
+                      <Btn
+                        onClick={handleLinkMultiple}
+                        disabled={loading || selected.length === 0}
+                      >
+                        {loading
+                          ? 'Vinculando...'
+                          : winData?.status?.is_open
+                            ? `Vincular (${selected.length})`
+                            : `Solicitar (${selected.length})`}
+                      </Btn>
                     </div>
-                  )}
-                  <form onSubmit={handleLink}>
-                    <FGrid style={{ gridTemplateColumns: '1fr' }}>
-                      <Fld>
-                        <Lbl>Supervisor disponível *</Lbl>
-                        <Sel value={linkChild} onChange={(e) => setLinkChild(e.target.value)}>
-                          <option value="">Selecione um supervisor...</option>
-                          {available.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}{s.territory ? ` — ${s.territory}` : ''}
-                            </option>
-                          ))}
-                        </Sel>
-                      </Fld>
-                    </FGrid>
-                    <Btn type="submit" disabled={loading || !linkChild}>
-                      {loading ? 'Salvando...' : winData?.status?.is_open ? 'Vincular agora' : 'Enviar solicitação'}
-                    </Btn>
-                  </form>
-                  {available.length === 0 && (
-                    <p style={{ fontSize: '0.8rem', color: '#9a948f', marginTop: '0.75rem' }}>
-                      Nenhum supervisor disponível para vínculo no momento.
-                    </p>
-                  )}
+                  </CardRow>
+
+                  <TblWrap style={{ marginTop: '0.8rem' }}>
+                    <Tbl>
+                      <thead>
+                        <tr>
+                          <th style={{ width: 36, textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              checked={filteredAvailable.length > 0 && selected.length === filteredAvailable.length}
+                              onChange={toggleAll}
+                              title="Selecionar todos"
+                            />
+                          </th>
+                          <th>Nome</th>
+                          <th>Matrícula</th>
+                          <th>CPF</th>
+                          <th>Regional</th>
+                          <th>Empresa</th>
+                          <th>Cargo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredAvailable.map((u) => (
+                          <tr
+                            key={u.id}
+                            style={{
+                              cursor: 'pointer',
+                              background: selected.includes(u.id)
+                                ? 'rgba(174,46,42,0.06)'
+                                : undefined,
+                            }}
+                            onClick={() => toggleSelect(u.id)}
+                          >
+                            <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={selected.includes(u.id)}
+                                onChange={() => toggleSelect(u.id)}
+                              />
+                            </td>
+                            <td><strong>{u.name}</strong></td>
+                            <td style={{ color: '#9a948f' }}>{u.employee_id || '—'}</td>
+                            <td style={{ color: '#9a948f', fontSize: '0.8rem' }}>{u.cpf || '—'}</td>
+                            <td>{u.regional || '—'}</td>
+                            <td>
+                              {u.empresa ? (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  background: isCorporativo(u.empresa) ? 'rgba(174,46,42,0.10)' : 'rgba(53,48,45,0.07)',
+                                  color: isCorporativo(u.empresa) ? '#ae2e2a' : '#5a5551',
+                                  borderRadius: 4, padding: '1px 7px',
+                                }}>{u.empresa}</span>
+                              ) : '—'}
+                            </td>
+                            <td style={{ color: '#9a948f', fontSize: '0.8rem' }}>{u.title || '—'}</td>
+                          </tr>
+                        ))}
+                        {filteredAvailable.length === 0 && (
+                          <tr>
+                            <td colSpan={7}>
+                              <Empty>
+                                <div className="icon">👥</div>
+                                {available.length > 0
+                                  ? 'Nenhum supervisor encontrado para esta regional / busca.'
+                                  : 'Nenhum supervisor disponível para vínculo no momento.'}
+                              </Empty>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </Tbl>
+                  </TblWrap>
                 </Card>
               </>
             )}

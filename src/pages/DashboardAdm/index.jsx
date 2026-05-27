@@ -70,6 +70,11 @@ const HierNode = ({ node, depth = 0, search = '' }) => {
             CPF: <strong>{node.cpf}</strong>
           </span>
         )}
+        {node.empresa && (
+          <span style={{ fontSize: '0.74rem', color: '#5a5551', background: 'rgba(255,255,255,0.75)', borderRadius: 4, padding: '1px 7px', fontStyle: 'italic' }}>
+            {node.empresa}
+          </span>
+        )}
         {node.regional && (
           <span style={{ fontSize: '0.72rem', color: '#9a948f', marginLeft: 'auto' }}>{node.regional}</span>
         )}
@@ -84,7 +89,7 @@ const HierNode = ({ node, depth = 0, search = '' }) => {
     </div>
   );
 };
-const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', territory: '', regional: '', title: '', manager_id: '' };
+const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', empresa: '', territory: '', regional: '', title: '', manager_id: '' };
 
 const DashboardAdm = () => {
   const navigate = useNavigate();
@@ -105,6 +110,8 @@ const DashboardAdm = () => {
   const [saving,     setSaving]     = useState(false);
   const [search,     setSearch]     = useState('');
   const [hierSearch, setHierSearch] = useState('');
+  const [superSearch, setSuperSearch] = useState('');
+  const [superOpen,   setSuperOpen]   = useState(false);
 
   useEffect(() => {
     if (!fcaStorage.get('token') || role !== 'admin') navigate('/login/GH');
@@ -136,10 +143,11 @@ const DashboardAdm = () => {
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
   // ── User CRUD ──
-  const openCreate = () => { setEditUser(null); setUserForm(EMPTY); setModalOpen(true); };
+  const openCreate = () => { setEditUser(null); setUserForm(EMPTY); setSuperSearch(''); setSuperOpen(false); setModalOpen(true); };
   const openEdit   = (u) => {
     setEditUser(u);
-    setUserForm({ name: u.name, usuario: u.usuario, email: u.email || '', password: '', role: u.role, employee_id: u.employee_id || '', cpf: u.cpf || '', territory: u.territory || '', regional: u.regional || '', title: u.title || '', manager_id: u.manager_id || '' });
+    setUserForm({ name: u.name, usuario: u.usuario, email: u.email || '', password: '', role: u.role, employee_id: u.employee_id || '', cpf: u.cpf || '', empresa: u.empresa || '', territory: u.territory || '', regional: u.regional || '', title: u.title || '', manager_id: u.manager_id || '' });
+    setSuperSearch(''); setSuperOpen(false);
     setModalOpen(true);
   };
 
@@ -188,8 +196,15 @@ const DashboardAdm = () => {
     const form = new FormData(); form.append('file', file);
     try {
       const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br'}/api/fca/users/import-csv`, { method: 'POST', headers: { Authorization: `Bearer ${fcaStorage.get('token')}` }, body: form });
-      const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Erro');
-      toast.success(data.message); loadUsers();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || 'Erro no servidor');
+      if ((data.created ?? 0) === 0 && (data.updated ?? 0) === 0) {
+        toast.warn(data.message + (data.errors?.length ? ` — ${data.errors.length} erro(s).` : ''));
+      } else {
+        toast.success(data.message);
+      }
+      if (data.errors?.length) console.warn('Import errors:', data.errors);
+      loadUsers(); loadHierarchy();
     } catch (err) { toast.error(err.message); }
     e.target.value = '';
   };
@@ -203,6 +218,16 @@ const DashboardAdm = () => {
     } catch (err) { toast.error(err.message); }
   };
 
+  // ── Clear imported ──
+  const clearBase = async () => {
+    if (!window.confirm('Isso vai remover TODOS os usuários não-admin (técnicos, supervisores, coordenadores). Confirma?')) return;
+    try {
+      const data = await fcaFetch('/fca/users/clear-imported', { method: 'DELETE' });
+      toast.success(data.message);
+      loadUsers(); loadDashboard(); loadHierarchy();
+    } catch (err) { toast.error(err.message); }
+  };
+
   // ── Window ──
   const saveWindow = async (e) => {
     e.preventDefault();
@@ -212,6 +237,8 @@ const DashboardAdm = () => {
 
   const filtered = users.filter((u) => [u.name, u.usuario, u.email, u.role, u.territory].some((v) => (v || '').toLowerCase().includes(search.toLowerCase())));
   const pending  = requests.filter((r) => r.status === 'pending');
+  const selectedSuperior = users.find((u) => String(u.id) === String(userForm.manager_id));
+  const filteredSupers   = users.filter((u) => !superSearch || u.name.toLowerCase().includes(superSearch.toLowerCase()));
 
   return (
     <FcaWrap>
@@ -346,10 +373,7 @@ const DashboardAdm = () => {
                       value={hierSearch}
                       onChange={(e) => setHierSearch(e.target.value)}
                     />
-                    <label style={{ cursor: 'pointer' }}>
-                      <Btn $v="ghost" as="span">↑ Importar CSV</Btn>
-                      <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={(e) => { importCsv(e); loadHierarchy(); }} />
-                    </label>
+                    <Btn $v="ghost" onClick={loadHierarchy}>↻ Atualizar</Btn>
                   </CardRow>
 
                   {hierarchy.length === 0 && (
@@ -451,6 +475,15 @@ const DashboardAdm = () => {
                     <Btn type="submit" style={{ marginTop: 4 }}>Salvar Janela</Btn>
                   </form>
                 </Card>
+
+                <Card style={{ maxWidth: 500, marginTop: '1.2rem', borderColor: 'rgba(157,41,38,0.30)' }}>
+                  <CardLabel style={{ color: '#9d2926' }}>Zona de Perigo</CardLabel>
+                  <p style={{ fontSize: '0.82rem', color: '#9a948f', margin: '0.6rem 0 1rem', lineHeight: 1.5 }}>
+                    Remove todos os técnicos, supervisores e coordenadores importados. Admins não são afetados.
+                    Use antes de reimportar uma base corrigida.
+                  </p>
+                  <Btn $v="danger" type="button" onClick={clearBase}>🗑 Limpar Base Importada</Btn>
+                </Card>
               </>
             )}
           </ContentArea>
@@ -476,10 +509,52 @@ const DashboardAdm = () => {
                 </Fld>
                 <Fld><Lbl>Matrícula</Lbl><Inp value={userForm.employee_id} onChange={(e) => setUserForm((p) => ({ ...p, employee_id: e.target.value }))} /></Fld>
                 <Fld><Lbl>CPF</Lbl><Inp value={userForm.cpf} onChange={(e) => setUserForm((p) => ({ ...p, cpf: e.target.value }))} placeholder="000.000.000-00" /></Fld>
+                <Fld><Lbl>Empresa</Lbl><Inp value={userForm.empresa} onChange={(e) => setUserForm((p) => ({ ...p, empresa: e.target.value }))} /></Fld>
                 <Fld><Lbl>Território</Lbl><Inp value={userForm.territory} onChange={(e) => setUserForm((p) => ({ ...p, territory: e.target.value }))} /></Fld>
                 <Fld><Lbl>Regional</Lbl><Inp value={userForm.regional} onChange={(e) => setUserForm((p) => ({ ...p, regional: e.target.value }))} /></Fld>
                 <Fld><Lbl>Cargo / Título</Lbl><Inp value={userForm.title} onChange={(e) => setUserForm((p) => ({ ...p, title: e.target.value }))} /></Fld>
-                <Fld><Lbl>ID do Superior</Lbl><Inp type="number" value={userForm.manager_id} onChange={(e) => setUserForm((p) => ({ ...p, manager_id: e.target.value }))} placeholder="(opcional)" /></Fld>
+                <Fld style={{ position: 'relative' }}>
+                  <Lbl>Superior</Lbl>
+                  <Inp
+                    value={superOpen ? superSearch : (selectedSuperior ? selectedSuperior.name : '')}
+                    placeholder="(opcional) buscar por nome..."
+                    autoComplete="off"
+                    onFocus={() => { setSuperOpen(true); setSuperSearch(''); }}
+                    onChange={(e) => setSuperSearch(e.target.value)}
+                    onBlur={() => setTimeout(() => setSuperOpen(false), 150)}
+                  />
+                  {superOpen && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
+                      background: '#fff', border: '1px solid #d4c8c0', borderRadius: 6,
+                      maxHeight: 220, overflowY: 'auto',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                    }}>
+                      <div
+                        style={{ padding: '8px 12px', cursor: 'pointer', color: '#888', borderBottom: '1px solid #f0ebe6', fontSize: '0.85rem' }}
+                        onMouseDown={() => { setUserForm((p) => ({ ...p, manager_id: '' })); setSuperOpen(false); }}
+                      >
+                        (sem superior)
+                      </div>
+                      {filteredSupers.map((u) => (
+                        <div
+                          key={u.id}
+                          style={{
+                            padding: '8px 12px', cursor: 'pointer', fontSize: '0.88rem',
+                            background: String(u.id) === String(userForm.manager_id) ? 'rgba(174,46,42,0.08)' : 'transparent',
+                            borderBottom: '1px solid #f8f4f1',
+                          }}
+                          onMouseDown={() => { setUserForm((p) => ({ ...p, manager_id: String(u.id) })); setSuperOpen(false); setSuperSearch(''); }}
+                        >
+                          {u.name} <span style={{ fontSize: '0.75rem', color: '#9a948f' }}>({ROLE_LABELS[u.role] || u.role})</span>
+                        </div>
+                      ))}
+                      {filteredSupers.length === 0 && (
+                        <div style={{ padding: '8px 12px', color: '#999', fontSize: '0.85rem' }}>Nenhum usuário encontrado</div>
+                      )}
+                    </div>
+                  )}
+                </Fld>
               </FGrid>
               <div className="mfooter">
                 <Btn $v="outline" type="button" onClick={() => setModalOpen(false)}>Cancelar</Btn>
