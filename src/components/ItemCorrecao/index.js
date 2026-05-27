@@ -94,14 +94,14 @@ const ItemCorrecao = ({ item, index, total, onItemUpdate, isSubmitting }) => {
                             <ImageLink as="div">
                                 <ImagePreview src={preview} alt="Pré-visualização" />
                             </ImageLink>
-                        ) : item.foto_correcao_path ? (
+                        ) : item.foto_correcao_path && statusCorrecao !== 'Reprovado' ? (
                             <ImageLink href={baseURL + item.foto_correcao_path} target="_blank" rel="noopener noreferrer">
                                 <ImagePreview src={baseURL + item.foto_correcao_path} alt="Foto da Correção" />
                             </ImageLink>
                         ) : canSubmit ? (
                             <UploadZone htmlFor={`file-${item.id}`}>
                                 <FiUpload />
-                                <span>Clique para anexar</span>
+                                <span>{statusCorrecao === 'Reprovado' ? 'Enviar nova foto' : 'Clique para anexar'}</span>
                                 <span className="hint">JPG, PNG, WEBP</span>
                             </UploadZone>
                         ) : (
