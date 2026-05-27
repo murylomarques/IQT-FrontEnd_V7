@@ -10,8 +10,81 @@ import {
 } from '../FCA/theme';
 import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
 
-const TABS = ['Dashboard', 'Usuários', 'Vínculos', 'Configurações'];
-const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', territory: '', regional: '', title: '', manager_id: '' };
+const TABS = ['Dashboard', 'Usuários', 'Hierarquia', 'Vínculos', 'Configurações'];
+
+// ── Hierarchy helpers ─────────────────────────────────────────────────────────
+const hierMatchStr = (node, q) =>
+  !q ||
+  (node.name        || '').toLowerCase().includes(q.toLowerCase()) ||
+  (node.employee_id || '').toLowerCase().includes(q.toLowerCase()) ||
+  (node.cpf         || '').toLowerCase().includes(q.toLowerCase());
+
+const hierMatchNode = (node, q) =>
+  hierMatchStr(node, q) ||
+  (node.subordinates || []).some((s) =>
+    hierMatchStr(s, q) || (s.subordinates || []).some((t) => hierMatchStr(t, q))
+  );
+
+const LEVEL_STYLE = {
+  0: { bg: 'rgba(174,46,42,0.08)', border: 'rgba(174,46,42,0.25)', label: 'Coordenador', labelColor: '#ae2e2a' },
+  1: { bg: 'rgba(212,113,32,0.07)', border: 'rgba(212,113,32,0.22)', label: 'Supervisor', labelColor: '#d47120' },
+  2: { bg: 'rgba(53,48,45,0.04)', border: 'rgba(53,48,45,0.12)', label: 'Técnico', labelColor: '#5a5551' },
+};
+
+const HierNode = ({ node, depth = 0, search = '' }) => {
+  const s = LEVEL_STYLE[depth] || LEVEL_STYLE[2];
+  const subs = node.subordinates || [];
+  const visibleSubs = search
+    ? subs.filter((sub) =>
+        hierMatchStr(sub, search) || (sub.subordinates || []).some((t) => hierMatchStr(t, search))
+      )
+    : subs;
+
+  return (
+    <div style={{
+      background: s.bg,
+      border: `1px solid ${s.border}`,
+      borderRadius: 10,
+      padding: depth === 0 ? '1rem 1.1rem' : depth === 1 ? '0.75rem 1rem' : '0.55rem 0.9rem',
+      marginLeft: depth * 20,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <span style={{
+          fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em',
+          textTransform: 'uppercase', color: s.labelColor,
+          background: 'rgba(255,255,255,0.7)', borderRadius: 4,
+          padding: '2px 7px', border: `1px solid ${s.border}`,
+        }}>
+          {s.label}
+        </span>
+        <span style={{ fontWeight: depth === 0 ? 700 : depth === 1 ? 600 : 500, fontSize: depth === 0 ? '0.97rem' : '0.88rem' }}>
+          {node.name}
+        </span>
+        {node.employee_id && (
+          <span style={{ fontSize: '0.76rem', color: '#9a948f', background: 'rgba(255,255,255,0.6)', borderRadius: 4, padding: '1px 6px' }}>
+            Mat: <strong>{node.employee_id}</strong>
+          </span>
+        )}
+        {node.cpf && (
+          <span style={{ fontSize: '0.76rem', color: '#9a948f', background: 'rgba(255,255,255,0.6)', borderRadius: 4, padding: '1px 6px' }}>
+            CPF: <strong>{node.cpf}</strong>
+          </span>
+        )}
+        {node.regional && (
+          <span style={{ fontSize: '0.72rem', color: '#9a948f', marginLeft: 'auto' }}>{node.regional}</span>
+        )}
+      </div>
+      {visibleSubs.length > 0 && (
+        <div style={{ marginTop: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+          {visibleSubs.map((sub) => (
+            <HierNode key={sub.id} node={sub} depth={depth + 1} search={search} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', territory: '', regional: '', title: '', manager_id: '' };
 
 const DashboardAdm = () => {
   const navigate = useNavigate();
@@ -23,6 +96,7 @@ const DashboardAdm = () => {
   const [visUsers,   setVisUsers]   = useState([]);
   const [users,      setUsers]      = useState([]);
   const [requests,   setRequests]   = useState([]);
+  const [hierarchy,  setHierarchy]  = useState([]);
   const [winData,    setWinData]    = useState(null);
   const [windowForm, setWindowForm] = useState({ start_day: 1, end_day: 7 });
   const [userForm,   setUserForm]   = useState(EMPTY);
@@ -30,6 +104,7 @@ const DashboardAdm = () => {
   const [modalOpen,  setModalOpen]  = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [search,     setSearch]     = useState('');
+  const [hierSearch, setHierSearch] = useState('');
 
   useEffect(() => {
     if (!fcaStorage.get('token') || role !== 'admin') navigate('/login/GH');
@@ -43,8 +118,9 @@ const DashboardAdm = () => {
     } catch (err) { toast.error(err.message); }
   }, []);
 
-  const loadUsers    = useCallback(async () => { try { setUsers(await fcaFetch('/fca/users')); } catch (e) { toast.error(e.message); } }, []);
-  const loadRequests = useCallback(async () => { try { setRequests(await fcaFetch('/fca/link-requests')); } catch (e) { toast.error(e.message); } }, []);
+  const loadUsers     = useCallback(async () => { try { setUsers(await fcaFetch('/fca/users')); } catch (e) { toast.error(e.message); } }, []);
+  const loadRequests  = useCallback(async () => { try { setRequests(await fcaFetch('/fca/link-requests')); } catch (e) { toast.error(e.message); } }, []);
+  const loadHierarchy = useCallback(async () => { try { setHierarchy(await fcaFetch('/fca/hierarchy/full-tree')); } catch (e) { toast.error(e.message); } }, []);
   const loadWindow   = useCallback(async () => {
     try {
       const d = await fcaFetch('/fca/window');
@@ -54,8 +130,8 @@ const DashboardAdm = () => {
   }, []);
 
   useEffect(() => {
-    loadDashboard(); loadUsers(); loadRequests(); loadWindow();
-  }, [loadDashboard, loadUsers, loadRequests, loadWindow]);
+    loadDashboard(); loadUsers(); loadRequests(); loadHierarchy(); loadWindow();
+  }, [loadDashboard, loadUsers, loadRequests, loadHierarchy, loadWindow]);
 
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
@@ -63,7 +139,7 @@ const DashboardAdm = () => {
   const openCreate = () => { setEditUser(null); setUserForm(EMPTY); setModalOpen(true); };
   const openEdit   = (u) => {
     setEditUser(u);
-    setUserForm({ name: u.name, usuario: u.usuario, email: u.email || '', password: '', role: u.role, employee_id: u.employee_id || '', territory: u.territory || '', regional: u.regional || '', title: u.title || '', manager_id: u.manager_id || '' });
+    setUserForm({ name: u.name, usuario: u.usuario, email: u.email || '', password: '', role: u.role, employee_id: u.employee_id || '', cpf: u.cpf || '', territory: u.territory || '', regional: u.regional || '', title: u.title || '', manager_id: u.manager_id || '' });
     setModalOpen(true);
   };
 
@@ -258,6 +334,42 @@ const DashboardAdm = () => {
               </>
             )}
 
+            {/* HIERARQUIA */}
+            {tab === 'Hierarquia' && (
+              <>
+                <PageTitle>Árvore de <em>Hierarquia</em></PageTitle>
+                <Card>
+                  <CardRow>
+                    <Inp
+                      style={{ maxWidth: 300, borderRadius: '999px' }}
+                      placeholder="🔍  Buscar nome, matrícula ou CPF..."
+                      value={hierSearch}
+                      onChange={(e) => setHierSearch(e.target.value)}
+                    />
+                    <label style={{ cursor: 'pointer' }}>
+                      <Btn $v="ghost" as="span">↑ Importar CSV</Btn>
+                      <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={(e) => { importCsv(e); loadHierarchy(); }} />
+                    </label>
+                  </CardRow>
+
+                  {hierarchy.length === 0 && (
+                    <Empty style={{ marginTop: '2rem' }}>
+                      <div className="icon">🏢</div>
+                      Nenhum coordenador cadastrado. Importe um CSV ou vincule usuários.
+                    </Empty>
+                  )}
+
+                  <div style={{ marginTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                    {hierarchy
+                      .filter((coord) => hierMatchNode(coord, hierSearch))
+                      .map((coord) => (
+                        <HierNode key={coord.id} node={coord} search={hierSearch} />
+                      ))}
+                  </div>
+                </Card>
+              </>
+            )}
+
             {/* VÍNCULOS */}
             {tab === 'Vínculos' && (
               <>
@@ -363,6 +475,7 @@ const DashboardAdm = () => {
                   </Sel>
                 </Fld>
                 <Fld><Lbl>Matrícula</Lbl><Inp value={userForm.employee_id} onChange={(e) => setUserForm((p) => ({ ...p, employee_id: e.target.value }))} /></Fld>
+                <Fld><Lbl>CPF</Lbl><Inp value={userForm.cpf} onChange={(e) => setUserForm((p) => ({ ...p, cpf: e.target.value }))} placeholder="000.000.000-00" /></Fld>
                 <Fld><Lbl>Território</Lbl><Inp value={userForm.territory} onChange={(e) => setUserForm((p) => ({ ...p, territory: e.target.value }))} /></Fld>
                 <Fld><Lbl>Regional</Lbl><Inp value={userForm.regional} onChange={(e) => setUserForm((p) => ({ ...p, regional: e.target.value }))} /></Fld>
                 <Fld><Lbl>Cargo / Título</Lbl><Inp value={userForm.title} onChange={(e) => setUserForm((p) => ({ ...p, title: e.target.value }))} /></Fld>
