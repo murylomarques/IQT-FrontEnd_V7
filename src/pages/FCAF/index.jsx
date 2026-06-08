@@ -4,11 +4,19 @@ import { toast } from 'react-toastify';
 import { FcaGlobal, LoginShell, LoginHero, LoginCard, LoginForm, LoginBtn, Fld, Lbl, Inp } from '../FCA/theme';
 import { fcafStorage, fcafFetch, fcafRedirect } from './api';
 
+const REMEMBER_USER_KEY = 'FCAF-remembered-user';
+
 const FcafLogin = () => {
-  const [usuario,  setUsuario]  = useState('');
+  const [usuario,  setUsuario]  = useState(() => localStorage.getItem(REMEMBER_USER_KEY) || '');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(() => Boolean(localStorage.getItem(REMEMBER_USER_KEY)));
   const [loading,  setLoading]  = useState(false);
   const navigate = useNavigate();
+
+  const handleRememberChange = (checked) => {
+    setRemember(checked);
+    if (!checked) localStorage.removeItem(REMEMBER_USER_KEY);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,6 +32,11 @@ const FcafLogin = () => {
       fcafStorage.set('name',  data.name);
       fcafStorage.set('role',  data.role);
       fcafStorage.set('id',    data.id);
+      if (remember) {
+        localStorage.setItem(REMEMBER_USER_KEY, usuario.trim());
+      } else {
+        localStorage.removeItem(REMEMBER_USER_KEY);
+      }
       toast.success(`Bem-vindo, ${data.name}!`);
       navigate(fcafRedirect(data.role));
     } catch (err) {
@@ -67,6 +80,15 @@ const FcafLogin = () => {
             <Inp id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••" disabled={loading} autoComplete="current-password" />
           </Fld>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: '#5a5551', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => handleRememberChange(e.target.checked)}
+              disabled={loading}
+            />
+            Lembrar usuário
+          </label>
           <LoginBtn type="submit" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</LoginBtn>
         </LoginForm>
       </LoginCard>

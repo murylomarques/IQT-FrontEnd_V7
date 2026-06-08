@@ -9,10 +9,25 @@ import {
 } from '../FCA/theme';
 import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
 
-const TABS = ['Minha Equipe', 'Vincular'];
+const TABS = ['Minha Equipe', 'Hierarquia', 'Vincular'];
 
 const isCorporativo = (empresa) =>
   empresa && empresa.toLowerCase().includes('corporativo');
+
+const matchesHierarchySearch = (supervisor, search) => {
+  if (!search) return true;
+  const query = search.toLowerCase();
+  const supervisorMatch =
+    (supervisor.name || '').toLowerCase().includes(query) ||
+    (supervisor.employee_id || '').toLowerCase().includes(query) ||
+    (supervisor.cpf || '').toLowerCase().includes(query);
+
+  return supervisorMatch || (supervisor.subordinates || []).some((tecnico) =>
+    (tecnico.name || '').toLowerCase().includes(query) ||
+    (tecnico.employee_id || '').toLowerCase().includes(query) ||
+    (tecnico.cpf || '').toLowerCase().includes(query)
+  );
+};
 
 const DashboardCoordenador = () => {
   const navigate   = useNavigate();
@@ -27,6 +42,7 @@ const DashboardCoordenador = () => {
   const [winData,      setWinData]   = useState(null);
   const [selected,     setSelected]  = useState([]);
   const [linkSearch,   setLinkSearch]= useState('');
+  const [hierSearch,   setHierSearch]= useState('');
   const [loading,      setLoading]   = useState(false);
 
   useEffect(() => {
@@ -49,6 +65,7 @@ const DashboardCoordenador = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const totalTecnicos = subordinates.reduce((acc, s) => acc + (s.subordinates?.length || 0), 0);
+  const filteredHierarchy = subordinates.filter((supervisor) => matchesHierarchySearch(supervisor, hierSearch));
 
   // Filtra disponíveis: mesma regional OU corporativo OU sem regional
   const filteredAvailable = available.filter((u) => {
@@ -213,6 +230,154 @@ const DashboardCoordenador = () => {
             )}
 
             {/* ── VINCULAR ── */}
+            {tab === 'Hierarquia' && (
+              <>
+                <PageTitle>Hierarquia da <em>Equipe</em></PageTitle>
+
+                <MetricsRow>
+                  <Metric>
+                    <div className="label">Supervisores vinculados</div>
+                    <div className="value">{subordinates.length}</div>
+                  </Metric>
+                  <Metric>
+                    <div className="label">Técnicos na hierarquia</div>
+                    <div className="value">{totalTecnicos}</div>
+                  </Metric>
+                </MetricsRow>
+
+                <Card>
+                  <CardRow>
+                    <CardLabel>Supervisores e técnicos vinculados</CardLabel>
+                    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                      <Inp
+                        style={{ maxWidth: 340, borderRadius: '999px' }}
+                        placeholder="🔍  Buscar supervisor, técnico, matrícula ou CPF..."
+                        value={hierSearch}
+                        onChange={(e) => setHierSearch(e.target.value)}
+                      />
+                      <Btn $v="ghost" onClick={loadData}>↻ Atualizar</Btn>
+                    </div>
+                  </CardRow>
+
+                  {filteredHierarchy.length === 0 && (
+                    <Empty style={{ marginTop: '1.4rem' }}>
+                      <div className="icon">👥</div>
+                      {subordinates.length > 0
+                        ? 'Nenhum supervisor ou técnico encontrado para a busca.'
+                        : 'Nenhum supervisor vinculado a você ainda.'}
+                    </Empty>
+                  )}
+
+                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                    {filteredHierarchy.map((supervisor) => {
+                      const tecnicos = supervisor.subordinates || [];
+                      const query = hierSearch.toLowerCase();
+                      const supervisorMatches =
+                        !query ||
+                        (supervisor.name || '').toLowerCase().includes(query) ||
+                        (supervisor.employee_id || '').toLowerCase().includes(query) ||
+                        (supervisor.cpf || '').toLowerCase().includes(query);
+                      const visibleTecnicos = supervisorMatches
+                        ? tecnicos
+                        : tecnicos.filter((tecnico) =>
+                            (tecnico.name || '').toLowerCase().includes(query) ||
+                            (tecnico.employee_id || '').toLowerCase().includes(query) ||
+                            (tecnico.cpf || '').toLowerCase().includes(query)
+                          );
+
+                      return (
+                        <div
+                          key={supervisor.id}
+                          style={{
+                            border: '1px solid rgba(212,113,32,0.22)',
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            background: 'rgba(212,113,32,0.04)',
+                          }}
+                        >
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.55rem',
+                            flexWrap: 'wrap',
+                            padding: '0.75rem 0.9rem',
+                            borderBottom: '1px solid rgba(212,113,32,0.16)',
+                            background: 'rgba(255,255,255,0.65)',
+                          }}>
+                            <RBadge $r="supervisao">Supervisor</RBadge>
+                            <strong>{supervisor.name}</strong>
+                            {supervisor.employee_id && (
+                              <span style={{ fontSize: '0.78rem', color: '#9a948f' }}>Mat: {supervisor.employee_id}</span>
+                            )}
+                            {supervisor.regional && (
+                              <span style={{ fontSize: '0.78rem', color: '#9a948f' }}>{supervisor.regional}</span>
+                            )}
+                            <span style={{
+                              marginLeft: 'auto',
+                              background: 'rgba(47,122,63,0.14)',
+                              color: '#1a5028',
+                              borderRadius: '999px',
+                              padding: '2px 10px',
+                              fontSize: '0.76rem',
+                              fontWeight: 700,
+                            }}>
+                              {tecnicos.length} técnico{tecnicos.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+
+                          {visibleTecnicos.length > 0 ? (
+                            <TblWrap style={{ marginTop: 0 }}>
+                              <Tbl style={{ minWidth: 760 }}>
+                                <thead>
+                                  <tr>
+                                    <th>Técnico</th>
+                                    <th>Matrícula</th>
+                                    <th>CPF</th>
+                                    <th>Regional</th>
+                                    <th>Empresa</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {visibleTecnicos.map((tecnico) => (
+                                    <tr key={tecnico.id}>
+                                      <td>
+                                        <RBadge $r="tecnico" style={{ marginRight: 6 }}>Técnico</RBadge>
+                                        <strong>{tecnico.name}</strong>
+                                      </td>
+                                      <td style={{ color: '#9a948f' }}>{tecnico.employee_id || '—'}</td>
+                                      <td style={{ color: '#9a948f', fontSize: '0.8rem' }}>{tecnico.cpf || '—'}</td>
+                                      <td>{tecnico.regional || '—'}</td>
+                                      <td>
+                                        {tecnico.empresa ? (
+                                          <span style={{
+                                            fontSize: '0.72rem',
+                                            background: isCorporativo(tecnico.empresa) ? 'rgba(174,46,42,0.10)' : 'rgba(53,48,45,0.07)',
+                                            color: isCorporativo(tecnico.empresa) ? '#ae2e2a' : '#5a5551',
+                                            borderRadius: 4,
+                                            padding: '1px 7px',
+                                          }}>
+                                            {tecnico.empresa}
+                                          </span>
+                                        ) : '—'}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </Tbl>
+                            </TblWrap>
+                          ) : (
+                            <div style={{ padding: '0.9rem', color: '#9a948f', fontSize: '0.86rem' }}>
+                              Nenhum técnico vinculado a este supervisor.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              </>
+            )}
+
             {tab === 'Vincular' && (
               <>
                 <PageTitle>Vincular <em>Supervisores</em></PageTitle>

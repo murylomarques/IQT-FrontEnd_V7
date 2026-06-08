@@ -186,7 +186,7 @@ const DashboardAdm = () => {
     try {
       const blob = await fcaFetch('/fca/users/export-csv');
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `usuarios_fca_${Date.now()}.csv`; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = `usuarios_fca_hierarquia_${Date.now()}.csv`; a.click();
       URL.revokeObjectURL(url);
     } catch (err) { toast.error(err.message); }
   };
@@ -220,7 +220,7 @@ const DashboardAdm = () => {
 
   // ── Clear imported ──
   const clearBase = async () => {
-    if (!window.confirm('Isso vai remover TODOS os usuários não-admin (técnicos, supervisores, coordenadores). Confirma?')) return;
+    if (!window.confirm('Isso vai remover técnicos, supervisores e coordenadores. Admins e consultas não serão removidos. Confirma?')) return;
     try {
       const data = await fcaFetch('/fca/users/clear-imported', { method: 'DELETE' });
       toast.success(data.message);
@@ -479,7 +479,7 @@ const DashboardAdm = () => {
                 <Card style={{ maxWidth: 500, marginTop: '1.2rem', borderColor: 'rgba(157,41,38,0.30)' }}>
                   <CardLabel style={{ color: '#9d2926' }}>Zona de Perigo</CardLabel>
                   <p style={{ fontSize: '0.82rem', color: '#9a948f', margin: '0.6rem 0 1rem', lineHeight: 1.5 }}>
-                    Remove todos os técnicos, supervisores e coordenadores importados. Admins não são afetados.
+                    Remove todos os técnicos, supervisores e coordenadores importados. Admins e consultas não são afetados.
                     Use antes de reimportar uma base corrigida.
                   </p>
                   <Btn $v="danger" type="button" onClick={clearBase}>🗑 Limpar Base Importada</Btn>
