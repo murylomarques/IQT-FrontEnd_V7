@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FiUpload, FiCheck, FiX, FiCheckCircle, FiAlertTriangle, FiClock } from 'react-icons/fi';
+import { optimizeImageFile } from '../../utils/imageOptimization';
 import {
     ItemCard, ItemHeader, ItemIndex, ItemTitle, StatusBadge,
     ItemBody, Label, ObservationText,
@@ -21,19 +22,28 @@ const ItemCorrecao = ({ item, index, total, onItemUpdate, isSubmitting }) => {
     const { user } = useAuth();
     const [fotoCorrecao, setFotoCorrecao] = useState(null);
     const [preview, setPreview] = useState(null);
+    const [isOptimizing, setIsOptimizing] = useState(false);
 
     useEffect(() => {
         setFotoCorrecao(null);
-        if (preview) URL.revokeObjectURL(preview);
-        setPreview(null);
+        setIsOptimizing(false);
+        setPreview(currentPreview => {
+            if (currentPreview) URL.revokeObjectURL(currentPreview);
+            return null;
+        });
     }, [item]);
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        setFotoCorrecao(file);
-        if (preview) URL.revokeObjectURL(preview);
-        setPreview(URL.createObjectURL(file));
+        setIsOptimizing(true);
+        const optimizedFile = await optimizeImageFile(file);
+        setFotoCorrecao(optimizedFile);
+        setPreview(currentPreview => {
+            if (currentPreview) URL.revokeObjectURL(currentPreview);
+            return URL.createObjectURL(optimizedFile);
+        });
+        setIsOptimizing(false);
     };
 
     const handleSubmitCorrecao = () => {
@@ -101,7 +111,7 @@ const ItemCorrecao = ({ item, index, total, onItemUpdate, isSubmitting }) => {
                         ) : canSubmit ? (
                             <UploadZone htmlFor={`file-${item.id}`}>
                                 <FiUpload />
-                                <span>{statusCorrecao === 'Reprovado' ? 'Enviar nova foto' : 'Clique para anexar'}</span>
+                                <span>{isOptimizing ? 'Otimizando...' : statusCorrecao === 'Reprovado' ? 'Enviar nova foto' : 'Clique para anexar'}</span>
                                 <span className="hint">JPG, PNG, WEBP</span>
                             </UploadZone>
                         ) : (
@@ -135,7 +145,7 @@ const ItemCorrecao = ({ item, index, total, onItemUpdate, isSubmitting }) => {
                 {canSubmit && (
                     <SubmitButton
                         onClick={handleSubmitCorrecao}
-                        disabled={isSubmitting || !fotoCorrecao}
+                        disabled={isSubmitting || isOptimizing || !fotoCorrecao}
                     >
                         <FiUpload />
                         {isSubmitting ? 'Enviando...' : 'Enviar Correção'}

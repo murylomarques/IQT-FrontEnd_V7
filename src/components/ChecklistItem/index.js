@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiUpload } from 'react-icons/fi';
+import { optimizeImageFile } from '../../utils/imageOptimization';
 import {
   ItemContainer, ItemLabel, RadioGroup, RadioLabel, HiddenRadio,
   ConditionalInputsWrapper, ItemTextArea, FileInputLabel, FileName, ImagePreview, RequiredNote
@@ -8,6 +9,7 @@ import {
 const ChecklistItem = ({ label, itemKey, value, onChange }) => {
   const { status, observacao, foto } = value;
   const [preview, setPreview] = useState(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
   useEffect(() => {
     if (!foto) { setPreview(null); return; }
@@ -19,6 +21,17 @@ const ChecklistItem = ({ label, itemKey, value, onChange }) => {
   const handleStatusChange = (v) => {
     onChange(itemKey, 'status', v);
     if (v !== 'Não Conforme') onChange(itemKey, 'foto', null);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    setIsOptimizing(true);
+    const optimizedFile = await optimizeImageFile(file);
+    onChange(itemKey, 'foto', optimizedFile);
+    setIsOptimizing(false);
   };
 
   return (
@@ -68,14 +81,12 @@ const ChecklistItem = ({ label, itemKey, value, onChange }) => {
           <div>
             <FileInputLabel>
               <FiUpload />
-              {foto ? 'Trocar Foto' : 'Enviar Foto'}
+              {isOptimizing ? 'Otimizando...' : foto ? 'Trocar Foto' : 'Enviar Foto'}
               <input
                 type="file"
                 accept="image/*"
                 hidden
-                onChange={(e) => {
-                  if (e.target.files[0]) onChange(itemKey, 'foto', e.target.files[0]);
-                }}
+                onChange={handleFileChange}
               />
             </FileInputLabel>
 

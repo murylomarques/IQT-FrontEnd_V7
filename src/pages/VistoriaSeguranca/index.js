@@ -2,55 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { fileToBase64, optimizeImageFile } from '../../utils/imageOptimization';
 
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
 import { SectionCard, SectionTitle, FormGrid, PrimaryButton } from '../../styles/GlobalStyle';
 import { Input, Select, TextArea, RadioGroup, Label, ChipButton, ChipGroup, ChipNote, FileUploadWrapper } from './styles';
-
-// Função 1: Redimensiona a imagem e retorna File
-const resizeImageFile = (file, options = { maxWidth: 1920, maxHeight: 1920, quality: 0.75 }) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = event => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
-
-        if (width > height) {
-          if (width > options.maxWidth) { height *= options.maxWidth / width; width = options.maxWidth; }
-        } else {
-          if (height > options.maxHeight) { width *= options.maxHeight / height; height = options.maxHeight; }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(blob => {
-          if (!blob) return reject(new Error('Falha ao converter canvas para blob'));
-          const newFile = new File([blob], file.name, { type: file.type, lastModified: Date.now() });
-          resolve(newFile);
-        }, file.type, options.quality);
-      };
-      img.onerror = reject;
-    };
-    reader.onerror = reject;
-  });
-};
-
-// Função 2: Converte File -> Base64
-const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-  });
-};
 
 const VistoriaSeguranca = () => {
   const { user, apiFetch } = useAuth();
@@ -198,7 +154,7 @@ const VistoriaSeguranca = () => {
 
     try {
       const processingPromises = selectedFiles.map(file => {
-        if (file.type.startsWith('image/')) return resizeImageFile(file);
+        if (file.type.startsWith('image/')) return optimizeImageFile(file);
         return Promise.resolve(file);
       });
 
