@@ -33,9 +33,11 @@ export const fcafFetch = async (path, options = {}) => {
 export const FCAF_ROLE_LABELS = {
   admin:     'Administrador',
   supervisao: 'Supervisor',
+  consulta:  'Consulta',
 };
 
 export const fcafRedirect = (role) => {
   if (role === 'admin') return '/dashboard/fca-admin';
+  if (role === 'consulta') return '/dashboard/fca-admin';
   return '/dashboard/fca-supervisor';
 };

@@ -24,8 +24,8 @@ const FcafLogin = () => {
     setLoading(true);
     try {
       const data = await fcafFetch('/loginfca', { method: 'POST', body: JSON.stringify({ usuario, password }) });
-      if (!['admin', 'supervisao'].includes(data.role)) {
-        toast.error('Acesso FCA disponível apenas para administradores e supervisores.');
+      if (!['admin', 'supervisao', 'consulta'].includes(data.role)) {
+        toast.error('Acesso FCA disponível apenas para administradores, supervisores e consulta.');
         return;
       }
       fcafStorage.set('token', data.token);

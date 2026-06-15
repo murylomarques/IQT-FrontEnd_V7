@@ -5,13 +5,12 @@ import {
   FcaGlobal, FcaWrap, Topbar, BrandRow, BrandLogo, BrandMeta, SessionPill,
   Shell, AppLayout, SideNav, NavBtn, ContentArea,
   PageTitle, Card, CardRow, CardLabel, MetricsRow, Metric,
-  TblWrap, Tbl, Btn, RBadge, SPill, WinBadge, Empty, Alert,
+  TblWrap, Tbl, Btn, SPill, WinBadge, Empty, Alert,
 } from '../FCA/theme';
 import { fcafStorage, fcafFetch, FCAF_ROLE_LABELS } from '../FCAF/api';
 
 const TABS = ['Analítico', 'Base'];
 
-const statusLabel = { realizado: 'Realizado', pendente: 'Pendente', vencido: 'Vencido' };
 const statusColor = {
   realizado: { background: 'rgba(47,122,63,.14)', color: '#1a5028' },
   pendente:  { background: 'rgba(184,108,16,.14)', color: '#7a4a00' },
@@ -22,6 +21,7 @@ const DashboardFcaAdmin = () => {
   const navigate  = useNavigate();
   const name      = fcafStorage.get('name') || 'Admin';
   const role      = fcafStorage.get('role');
+  const isReadOnly = role === 'consulta';
 
   const [tab,      setTab]      = useState('Analítico');
   const [data,     setData]     = useState(null);
@@ -30,7 +30,7 @@ const DashboardFcaAdmin = () => {
   const fileRef = useRef();
 
   useEffect(() => {
-    if (!fcafStorage.get('token') || role !== 'admin') navigate('/login/FCA');
+    if (!fcafStorage.get('token') || !['admin', 'consulta'].includes(role)) navigate('/login/FCA');
   }, [navigate, role]);
 
   const load = useCallback(async () => {
@@ -49,6 +49,7 @@ const DashboardFcaAdmin = () => {
   const logout = () => { fcafStorage.clear(); navigate('/login/FCA'); };
 
   const downloadModelo = () => {
+    if (isReadOnly) return;
     const rows = [
       ['Mes', 'mai/26', 'mai/26', 'mai/26', 'mai/26'],
       ['Nome', 'Prod_bruta', 'Revisita', 'Tec1', 'Certificado'],
@@ -69,6 +70,7 @@ const DashboardFcaAdmin = () => {
   };
 
   const handleUpload = async (e) => {
+    if (isReadOnly) return;
     const file = e.target.files?.[0]; if (!file) return;
     const form = new FormData(); form.append('file', file);
     setUploading(true);
@@ -95,7 +97,7 @@ const DashboardFcaAdmin = () => {
           <BrandLogo>FCA</BrandLogo>
           <BrandMeta>
             <div className="title">Avaliação de Campo</div>
-            <div className="sub">Painel do Administrador</div>
+            <div className="sub">{isReadOnly ? 'Painel de Consulta' : 'Painel do Administrador'}</div>
           </BrandMeta>
         </BrandRow>
         <SessionPill>
@@ -197,7 +199,7 @@ const DashboardFcaAdmin = () => {
                 <Card>
                   <CardRow>
                     <CardLabel>Formato esperado da planilha</CardLabel>
-                    <Btn $v="ghost" className="sm" onClick={downloadModelo}>↓ Baixar modelo .csv</Btn>
+                    {!isReadOnly && <Btn $v="ghost" className="sm" onClick={downloadModelo}>↓ Baixar modelo .csv</Btn>}
                   </CardRow>
 
                   <p style={{ fontSize: '0.8rem', color: '#5a5551', margin: '0.5rem 0 0.9rem', lineHeight: 1.6 }}>
@@ -245,27 +247,29 @@ const DashboardFcaAdmin = () => {
                 </Card>
 
                 {/* ── Upload ── */}
-                <Card style={{ maxWidth: 540 }}>
-                  <CardLabel>Importar Nova Base</CardLabel>
-                  <p style={{ fontSize: '0.84rem', color: '#5a5551', marginTop: '0.5rem', lineHeight: 1.65 }}>
-                    Após o upload um novo período de <strong>25 dias</strong> será criado. Períodos anteriores são desativados automaticamente.
-                  </p>
+                {!isReadOnly && (
+                  <Card style={{ maxWidth: 540 }}>
+                    <CardLabel>Importar Nova Base</CardLabel>
+                    <p style={{ fontSize: '0.84rem', color: '#5a5551', marginTop: '0.5rem', lineHeight: 1.65 }}>
+                      Após o upload um novo período de <strong>25 dias</strong> será criado. Períodos anteriores são desativados automaticamente.
+                    </p>
 
-                  {period && !period.is_expired && (
-                    <Alert $t="warn" style={{ marginTop: '0.9rem' }}>
-                      ⚠️ Existe um período ativo ({period.mes}). Ao importar nova base o período atual será encerrado.
-                    </Alert>
-                  )}
+                    {period && !period.is_expired && (
+                      <Alert $t="warn" style={{ marginTop: '0.9rem' }}>
+                        ⚠️ Existe um período ativo ({period.mes}). Ao importar nova base o período atual será encerrado.
+                      </Alert>
+                    )}
 
-                  <div style={{ marginTop: '1.1rem' }}>
-                    <label style={{ cursor: 'pointer' }}>
-                      <Btn as="span" disabled={uploading}>
-                        {uploading ? 'Importando...' : '↑ Selecionar arquivo .xlsx'}
-                      </Btn>
-                      <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
-                    </label>
-                  </div>
-                </Card>
+                    <div style={{ marginTop: '1.1rem' }}>
+                      <label style={{ cursor: 'pointer' }}>
+                        <Btn as="span" disabled={uploading}>
+                          {uploading ? 'Importando...' : '↑ Selecionar arquivo .xlsx'}
+                        </Btn>
+                        <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+                      </label>
+                    </div>
+                  </Card>
+                )}
 
                 {history.length > 0 && (
                   <Card>

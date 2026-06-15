@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import {
   FcaGlobal, FcaWrap, Topbar, BrandRow, BrandLogo, BrandMeta, SessionPill,
   Shell, AppLayout, SideNav, NavBtn, ContentArea,
-  PageTitle, Card, CardRow, CardLabel, MetricsRow, Metric,
+  PageTitle, Card, CardLabel, MetricsRow, Metric,
   FGrid, Fld, Lbl, Inp, Sel, Btn, TblWrap, Tbl,
   WinBadge, Empty, Alert, Overlay, ModalBox,
 } from '../FCA/theme';
@@ -69,6 +69,12 @@ const DashboardFcaSupervisor = () => {
 
   const tecnicos = analytics?.tecnicos || [];
   const period   = analytics?.period;
+  const detailChecklistCount = tecDetail?.checklist_count ?? (tecDetail?.has_checklist ? 1 : 0);
+  const detailRequiredChecklists = tecDetail?.required_checklists ?? tecDetail?.required_pos ?? 0;
+  const detailPoCount = tecDetail?.po_count ?? 0;
+  const detailPoProgress = tecDetail?.po_progress ?? tecDetail?.po_days ?? 0;
+  const canCreateChecklist = Boolean(tecDetail && period && !period.is_expired && detailChecklistCount < detailRequiredChecklists);
+  const canCreatePo = Boolean(tecDetail && period && !period.is_expired && detailChecklistCount > detailPoCount);
 
   // ── Load technician detail + forms ───────────────────────────────────────
   const loadTecDetail = useCallback(async (id) => {
@@ -115,6 +121,12 @@ const DashboardFcaSupervisor = () => {
 
   const setClAnswer = (idx, field, value) => {
     setClAnswers((prev) => prev.map((a, i) => i === idx ? { ...a, [field]: value } : a));
+  };
+
+  const startNewChecklist = () => {
+    setClAnswers(buildEmptyChecklist());
+    setClLoaded(false);
+    setViewCl(false);
   };
 
   // ── PO submit ─────────────────────────────────────────────────────────────
@@ -212,29 +224,35 @@ const DashboardFcaSupervisor = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {tecnicos.map((t) => (
-                          <tr key={t.id}>
-                            <td><strong>{t.nome}</strong></td>
-                            <td><CertChip v={t.certificado} /></td>
-                            <td>
-                              <span style={{ fontWeight: 700, color: t.has_checklist ? '#1a5028' : '#9a948f', fontSize: '0.82rem' }}>
-                                {t.has_checklist ? '✓' : '—'}
-                              </span>
-                            </td>
-                            <td style={{ fontSize: '0.82rem' }}>
-                              <span style={{ fontWeight: 700, color: t.po_days >= t.required_pos ? '#1a5028' : '#9a948f' }}>
-                                {t.po_days}/{t.required_pos}
-                              </span>
-                              <span style={{ color: '#9a948f', fontSize: '0.72rem' }}> dias</span>
-                            </td>
-                            <td><StatusChip s={t.status} /></td>
-                            <td>
-                              <Btn className="sm" onClick={() => { setTab('Checklist'); onSelectTec(String(t.id)); }}>
-                                Avaliar
-                              </Btn>
-                            </td>
-                          </tr>
-                        ))}
+                        {tecnicos.map((t) => {
+                          const checklistCount = t.checklist_count ?? (t.has_checklist ? 1 : 0);
+                          const requiredChecklists = t.required_checklists ?? t.required_pos;
+                          const poProgress = t.po_progress ?? t.po_days;
+
+                          return (
+                            <tr key={t.id}>
+                              <td><strong>{t.nome}</strong></td>
+                              <td><CertChip v={t.certificado} /></td>
+                              <td>
+                                <span style={{ fontWeight: 700, color: checklistCount >= requiredChecklists ? '#1a5028' : '#9a948f', fontSize: '0.82rem' }}>
+                                  {checklistCount}/{requiredChecklists}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.82rem' }}>
+                                <span style={{ fontWeight: 700, color: poProgress >= t.required_pos ? '#1a5028' : '#9a948f' }}>
+                                  {poProgress}/{t.required_pos}
+                                </span>
+                                <span style={{ color: '#9a948f', fontSize: '0.72rem' }}> {t.isCertificado ? 'POs' : 'dias'}</span>
+                              </td>
+                              <td><StatusChip s={t.status} /></td>
+                              <td>
+                                <Btn className="sm" onClick={() => { setTab('Checklist'); onSelectTec(String(t.id)); }}>
+                                  Avaliar
+                                </Btn>
+                              </td>
+                            </tr>
+                          );
+                        })}
                         {tecnicos.length === 0 && (
                           <tr><td colSpan={6}><Empty><div className="icon">👥</div>Nenhum técnico vinculado na base atual.</Empty></td></tr>
                         )}
@@ -254,11 +272,15 @@ const DashboardFcaSupervisor = () => {
                   <CardLabel>Selecione o técnico</CardLabel>
                   <Sel style={{ marginTop: '0.6rem' }} value={selectedTec} onChange={(e) => onSelectTec(e.target.value)}>
                     <option value="">Selecione...</option>
-                    {tecnicos.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.nome} — {t.certificado} {t.has_checklist ? '✓' : ''}
-                      </option>
-                    ))}
+                    {tecnicos.map((t) => {
+                      const checklistCount = t.checklist_count ?? (t.has_checklist ? 1 : 0);
+                      const requiredChecklists = t.required_checklists ?? t.required_pos;
+                      return (
+                        <option key={t.id} value={t.id}>
+                          {t.nome} — Checklist {checklistCount}/{requiredChecklists}
+                        </option>
+                      );
+                    })}
                   </Sel>
                 </Card>
 
@@ -268,21 +290,28 @@ const DashboardFcaSupervisor = () => {
                     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
                       <CertChip v={tecDetail.certificado} />
                       <StatusChip s={tecDetail.status} />
+                      <span style={{ fontSize: '0.82rem', color: '#5a5551', fontWeight: 600 }}>
+                        Checklists: <strong>{detailChecklistCount}</strong>/{detailRequiredChecklists}
+                      </span>
                       {clLoaded && (
                         <Btn $v="ghost" className="sm" onClick={() => setViewCl(!viewCl)}>
                           {viewCl ? 'Ocultar respostas' : 'Ver respostas preenchidas'}
                         </Btn>
                       )}
+                      {canCreateChecklist && (
+                        <Btn className="sm" onClick={startNewChecklist}>+ Novo Checklist</Btn>
+                      )}
                     </div>
 
                     {clLoaded && !viewCl && (
-                      <Alert $t="success">✓ Checklist já preenchido para este técnico neste período.</Alert>
+                      <Alert $t={detailChecklistCount >= detailRequiredChecklists ? 'success' : 'warn'}>
+                        Checklist mais recente carregado. Realizados: {detailChecklistCount}/{detailRequiredChecklists}.
+                      </Alert>
                     )}
 
                     {(!clLoaded || viewCl) && (
                       <form onSubmit={clLoaded ? (e) => e.preventDefault() : submitChecklist}>
                         {CHECKLIST_SECTIONS.map((sec, si) => {
-                          const secAnswers = clAnswers.filter((a) => a.section === sec.id);
                           const startIdx   = clAnswers.findIndex((a) => a.section === sec.id);
                           return (
                             <Card key={sec.id} $p="1.1rem">
@@ -355,11 +384,14 @@ const DashboardFcaSupervisor = () => {
                   <CardLabel>Selecione o técnico</CardLabel>
                   <Sel style={{ marginTop: '0.6rem' }} value={selectedTec} onChange={(e) => onSelectTec(e.target.value)}>
                     <option value="">Selecione...</option>
-                    {tecnicos.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.nome} — {t.po_days}/{t.required_pos} dias
-                      </option>
-                    ))}
+                    {tecnicos.map((t) => {
+                      const poProgress = t.po_progress ?? t.po_days;
+                      return (
+                        <option key={t.id} value={t.id}>
+                          {t.nome} — PO {poProgress}/{t.required_pos}
+                        </option>
+                      );
+                    })}
                   </Sel>
                 </Card>
 
@@ -370,13 +402,18 @@ const DashboardFcaSupervisor = () => {
                         ⚠️ Preencha o Checklist deste técnico antes de registrar um PO.
                       </Alert>
                     )}
+                    {period && !period.is_expired && tecDetail.has_checklist && !canCreatePo && detailPoCount < detailRequiredChecklists && (
+                      <Alert $t="warn" style={{ marginBottom: '1rem' }}>
+                        Realize mais um Checklist deste técnico antes de registrar outro PO.
+                      </Alert>
+                    )}
 
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
                       <CertChip v={tecDetail.certificado} />
                       <span style={{ fontSize: '0.82rem', color: '#5a5551', fontWeight: 600 }}>
-                        POs registrados: <strong>{tecDetail.po_count}</strong> ({tecDetail.po_days} dias distintos / {tecDetail.required_pos} necessários)
+                        POs registrados: <strong>{detailPoCount}</strong> ({detailPoProgress}/{tecDetail.required_pos} {tecDetail.isCertificado ? 'POs' : 'dias distintos'} necessários)
                       </span>
-                      {period && !period.is_expired && tecDetail.has_checklist && (
+                      {canCreatePo && (
                         <Btn className="sm" onClick={openPoModal}>+ Novo PO</Btn>
                       )}
                     </div>

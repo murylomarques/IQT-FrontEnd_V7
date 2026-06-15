@@ -95,6 +95,7 @@ const DashboardAdm = () => {
   const navigate = useNavigate();
   const name     = fcaStorage.get('name') || 'Admin';
   const role     = fcaStorage.get('role');
+  const isReadOnly = role === 'consulta';
 
   const [tab,        setTab]        = useState('Dashboard');
   const [metrics,    setMetrics]    = useState(null);
@@ -114,7 +115,7 @@ const DashboardAdm = () => {
   const [superOpen,   setSuperOpen]   = useState(false);
 
   useEffect(() => {
-    if (!fcaStorage.get('token') || role !== 'admin') navigate('/login/GH');
+    if (!fcaStorage.get('token') || !['admin', 'consulta'].includes(role)) navigate('/login/GH');
   }, [navigate, role]);
 
   const loadDashboard = useCallback(async () => {
@@ -143,8 +144,12 @@ const DashboardAdm = () => {
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
   // ── User CRUD ──
-  const openCreate = () => { setEditUser(null); setUserForm(EMPTY); setSuperSearch(''); setSuperOpen(false); setModalOpen(true); };
+  const openCreate = () => {
+    if (isReadOnly) return;
+    setEditUser(null); setUserForm(EMPTY); setSuperSearch(''); setSuperOpen(false); setModalOpen(true);
+  };
   const openEdit   = (u) => {
+    if (isReadOnly) return;
     setEditUser(u);
     setUserForm({ name: u.name, usuario: u.usuario, email: u.email || '', password: '', role: u.role, employee_id: u.employee_id || '', cpf: u.cpf || '', empresa: u.empresa || '', territory: u.territory || '', regional: u.regional || '', title: u.title || '', manager_id: u.manager_id || '' });
     setSuperSearch(''); setSuperOpen(false);
@@ -153,6 +158,7 @@ const DashboardAdm = () => {
 
   const saveUser = async (e) => {
     e.preventDefault();
+    if (isReadOnly) return;
     setSaving(true);
     try {
       const body = { ...userForm };
@@ -173,6 +179,7 @@ const DashboardAdm = () => {
   };
 
   const deleteUser = async (u) => {
+    if (isReadOnly) return;
     if (!window.confirm(`Excluir ${u.name}?`)) return;
     try {
       await fcaFetch(`/fca/users/${u.id}`, { method: 'DELETE' });
@@ -183,6 +190,7 @@ const DashboardAdm = () => {
 
   // ── CSV ──
   const exportCsv = async () => {
+    if (isReadOnly) return;
     try {
       const blob = await fcaFetch('/fca/users/export-csv');
       const url = URL.createObjectURL(blob);
@@ -192,6 +200,7 @@ const DashboardAdm = () => {
   };
 
   const importCsv = async (e) => {
+    if (isReadOnly) return;
     const file = e.target.files?.[0]; if (!file) return;
     const form = new FormData(); form.append('file', file);
     try {
@@ -211,6 +220,7 @@ const DashboardAdm = () => {
 
   // ── Link Requests ──
   const decide = async (id, action) => {
+    if (isReadOnly) return;
     try {
       await fcaFetch(`/fca/link-requests/${id}/${action}`, { method: 'PUT', body: JSON.stringify({ note: action === 'approve' ? 'Aprovado.' : 'Reprovado.' }) });
       toast.success(action === 'approve' ? 'Vínculo aprovado.' : 'Reprovado.');
@@ -220,6 +230,7 @@ const DashboardAdm = () => {
 
   // ── Clear imported ──
   const clearBase = async () => {
+    if (isReadOnly) return;
     if (!window.confirm('Isso vai remover técnicos, supervisores e coordenadores. Admins e consultas não serão removidos. Confirma?')) return;
     try {
       const data = await fcaFetch('/fca/users/clear-imported', { method: 'DELETE' });
@@ -231,6 +242,7 @@ const DashboardAdm = () => {
   // ── Window ──
   const saveWindow = async (e) => {
     e.preventDefault();
+    if (isReadOnly) return;
     try { await fcaFetch('/fca/window', { method: 'PUT', body: JSON.stringify(windowForm) }); toast.success('Janela atualizada.'); loadWindow(); }
     catch (err) { toast.error(err.message); }
   };
@@ -322,18 +334,25 @@ const DashboardAdm = () => {
                 <Card>
                   <CardRow>
                     <Inp style={{ maxWidth: 280, borderRadius: '999px' }} placeholder="🔍  Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <Btn onClick={openCreate}>+ Adicionar</Btn>
-                      <Btn $v="ghost" onClick={exportCsv}>↓ Exportar CSV</Btn>
-                      <label style={{ cursor: 'pointer' }}>
-                        <Btn $v="ghost" as="span">↑ Importar CSV</Btn>
-                        <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCsv} />
-                      </label>
-                    </div>
+                    {!isReadOnly && (
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <Btn onClick={openCreate}>+ Adicionar</Btn>
+                        <Btn $v="ghost" onClick={exportCsv}>↓ Exportar CSV</Btn>
+                        <label style={{ cursor: 'pointer' }}>
+                          <Btn $v="ghost" as="span">↑ Importar CSV</Btn>
+                          <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCsv} />
+                        </label>
+                      </div>
+                    )}
                   </CardRow>
                   <TblWrap>
                     <Tbl>
-                      <thead><tr><th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Território</th><th>Superior</th><th>Ações</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Território</th><th>Superior</th>
+                          {!isReadOnly && <th>Ações</th>}
+                        </tr>
+                      </thead>
                       <tbody>
                         {filtered.map((u) => (
                           <tr key={u.id}>
@@ -343,16 +362,18 @@ const DashboardAdm = () => {
                             <td><RBadge $r={u.role}>{ROLE_LABELS[u.role] || u.role}</RBadge></td>
                             <td>{u.territory || '—'}</td>
                             <td>{u.manager_name || '—'}</td>
-                            <td>
-                              <div style={{ display: 'flex', gap: 6 }}>
-                                <Btn $v="ghost" className="sm" onClick={() => openEdit(u)}>Editar</Btn>
-                                <Btn $v="danger" className="sm" onClick={() => deleteUser(u)}>Excluir</Btn>
-                              </div>
-                            </td>
+                            {!isReadOnly && (
+                              <td>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  <Btn $v="ghost" className="sm" onClick={() => openEdit(u)}>Editar</Btn>
+                                  <Btn $v="danger" className="sm" onClick={() => deleteUser(u)}>Excluir</Btn>
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         ))}
                         {filtered.length === 0 && (
-                          <tr><td colSpan={7}><Empty><div className="icon">🔍</div>Nenhum resultado encontrado.</Empty></td></tr>
+                          <tr><td colSpan={isReadOnly ? 6 : 7}><Empty><div className="icon">🔍</div>Nenhum resultado encontrado.</Empty></td></tr>
                         )}
                       </tbody>
                     </Tbl>
@@ -400,14 +421,19 @@ const DashboardAdm = () => {
                 <PageTitle>Solicitações de <em>Vínculo</em></PageTitle>
                 {pending.length > 0 && (
                   <Alert $t="warn">
-                    ⚠️ {pending.length} solicitação{pending.length > 1 ? 'ões' : ''} aguardando sua decisão.
+                    ⚠️ {pending.length} solicitação{pending.length > 1 ? 'ões' : ''} {isReadOnly ? 'pendente.' : 'aguardando sua decisão.'}
                   </Alert>
                 )}
                 <Card>
                   <CardLabel>Todos os pedidos ({requests.length})</CardLabel>
                   <TblWrap style={{ marginTop: '0.8rem' }}>
                     <Tbl>
-                      <thead><tr><th>#</th><th>Solicitante</th><th>Superior</th><th>Colaborador</th><th>Data</th><th>Status</th><th>Ação</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>#</th><th>Solicitante</th><th>Superior</th><th>Colaborador</th><th>Data</th><th>Status</th>
+                          {!isReadOnly && <th>Ação</th>}
+                        </tr>
+                      </thead>
                       <tbody>
                         {requests.map((r) => (
                           <tr key={r.id}>
@@ -423,18 +449,20 @@ const DashboardAdm = () => {
                             </td>
                             <td style={{ fontSize: '0.78rem', color: '#9a948f' }}>{r.requested_at ? new Date(r.requested_at).toLocaleDateString('pt-BR') : '—'}</td>
                             <td><SPill $s={r.status}>{r.status}</SPill></td>
-                            <td>
-                              {r.status === 'pending' && (
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                  <Btn $v="success" className="sm" onClick={() => decide(r.id, 'approve')}>Aprovar</Btn>
-                                  <Btn $v="danger"  className="sm" onClick={() => decide(r.id, 'reject')}>Reprovar</Btn>
-                                </div>
-                              )}
-                            </td>
+                            {!isReadOnly && (
+                              <td>
+                                {r.status === 'pending' && (
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <Btn $v="success" className="sm" onClick={() => decide(r.id, 'approve')}>Aprovar</Btn>
+                                    <Btn $v="danger"  className="sm" onClick={() => decide(r.id, 'reject')}>Reprovar</Btn>
+                                  </div>
+                                )}
+                              </td>
+                            )}
                           </tr>
                         ))}
                         {requests.length === 0 && (
-                          <tr><td colSpan={7}><Empty><div className="icon">✅</div>Nenhuma solicitação pendente.</Empty></td></tr>
+                          <tr><td colSpan={isReadOnly ? 6 : 7}><Empty><div className="icon">✅</div>Nenhuma solicitação pendente.</Empty></td></tr>
                         )}
                       </tbody>
                     </Tbl>
@@ -465,25 +493,27 @@ const DashboardAdm = () => {
                     <FGrid style={{ gridTemplateColumns: '1fr 1fr' }}>
                       <Fld>
                         <Lbl>Dia de início</Lbl>
-                        <Inp type="number" min={1} max={31} value={windowForm.start_day} onChange={(e) => setWindowForm((p) => ({ ...p, start_day: +e.target.value }))} />
+                        <Inp type="number" min={1} max={31} value={windowForm.start_day} disabled={isReadOnly} onChange={(e) => setWindowForm((p) => ({ ...p, start_day: +e.target.value }))} />
                       </Fld>
                       <Fld>
                         <Lbl>Dia de fim</Lbl>
-                        <Inp type="number" min={1} max={31} value={windowForm.end_day} onChange={(e) => setWindowForm((p) => ({ ...p, end_day: +e.target.value }))} />
+                        <Inp type="number" min={1} max={31} value={windowForm.end_day} disabled={isReadOnly} onChange={(e) => setWindowForm((p) => ({ ...p, end_day: +e.target.value }))} />
                       </Fld>
                     </FGrid>
-                    <Btn type="submit" style={{ marginTop: 4 }}>Salvar Janela</Btn>
+                    {!isReadOnly && <Btn type="submit" style={{ marginTop: 4 }}>Salvar Janela</Btn>}
                   </form>
                 </Card>
 
-                <Card style={{ maxWidth: 500, marginTop: '1.2rem', borderColor: 'rgba(157,41,38,0.30)' }}>
-                  <CardLabel style={{ color: '#9d2926' }}>Zona de Perigo</CardLabel>
-                  <p style={{ fontSize: '0.82rem', color: '#9a948f', margin: '0.6rem 0 1rem', lineHeight: 1.5 }}>
-                    Remove todos os técnicos, supervisores e coordenadores importados. Admins e consultas não são afetados.
-                    Use antes de reimportar uma base corrigida.
-                  </p>
-                  <Btn $v="danger" type="button" onClick={clearBase}>🗑 Limpar Base Importada</Btn>
-                </Card>
+                {!isReadOnly && (
+                  <Card style={{ maxWidth: 500, marginTop: '1.2rem', borderColor: 'rgba(157,41,38,0.30)' }}>
+                    <CardLabel style={{ color: '#9d2926' }}>Zona de Perigo</CardLabel>
+                    <p style={{ fontSize: '0.82rem', color: '#9a948f', margin: '0.6rem 0 1rem', lineHeight: 1.5 }}>
+                      Remove todos os técnicos, supervisores e coordenadores importados. Admins e consultas não são afetados.
+                      Use antes de reimportar uma base corrigida.
+                    </p>
+                    <Btn $v="danger" type="button" onClick={clearBase}>🗑 Limpar Base Importada</Btn>
+                  </Card>
+                )}
               </>
             )}
           </ContentArea>
@@ -491,7 +521,7 @@ const DashboardAdm = () => {
       </Shell>
 
       {/* ── Modal criar / editar ── */}
-      {modalOpen && (
+      {modalOpen && !isReadOnly && (
         <Overlay onClick={() => setModalOpen(false)}>
           <ModalBox onClick={(e) => e.stopPropagation()}>
             <h3>{editUser ? 'Editar Usuário' : 'Novo Usuário'}</h3>
