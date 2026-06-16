@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { SidebarContainer, LogoContainer, NavList, NavItem, ToggleButton } from './styles';
-import { FiGrid, FiSettings, FiBarChart2, FiChevronLeft, FiCalendar, FiClock, FiBook, FiUserPlus, FiMessageCircle } from 'react-icons/fi';
+import { FiGrid, FiSettings, FiBarChart2, FiChevronLeft, FiCalendar, FiClock, FiBook, FiUserPlus, FiMessageCircle, FiTool } from 'react-icons/fi';
 
 const Menu = ({ isExpanded, setIsExpanded }) => {
   const { user } = useAuth();
@@ -34,6 +34,13 @@ const Menu = ({ isExpanded, setIsExpanded }) => {
         </NavItem>
 
         <NavItem isExpanded={isExpanded}>
+          <NavLink to="/manutencao/backlog" title="Backlog Manutenção">
+            <FiTool />
+            <span>Backlog Manut.</span>
+          </NavLink>
+        </NavItem>
+
+        <NavItem isExpanded={isExpanded}>
           <NavLink to="/mensagens" title="Mensagens">
             <FiMessageCircle />
             <span>Mensagens</span>
@@ -47,6 +54,13 @@ const Menu = ({ isExpanded, setIsExpanded }) => {
               <NavLink to="/agendamentos" title="Agendamentos">
                 <FiCalendar />
                 <span>Agendamentos</span>
+              </NavLink>
+            </NavItem>
+
+            <NavItem isExpanded={isExpanded}>
+              <NavLink to="/manutencao/agendamentos" title="Agendar Manutenção">
+                <FiTool />
+                <span>Agendar Manut.</span>
               </NavLink>
             </NavItem>
 
