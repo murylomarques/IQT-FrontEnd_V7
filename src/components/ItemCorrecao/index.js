@@ -70,7 +70,7 @@ const ItemCorrecao = ({ item, index, total, onItemUpdate, isSubmitting }) => {
             <ItemHeader>
                 <div className="left">
                     <ItemIndex>{index}/{total}</ItemIndex>
-                    <ItemTitle>{item.item_key.replace(/_/g, ' ')}</ItemTitle>
+                    <ItemTitle>{item.label || item.item_key.replace(/_/g, ' ')}</ItemTitle>
                 </div>
                 <StatusBadge status={statusCorrecao}>
                     {STATUS_ICON[statusCorrecao]}

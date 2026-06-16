@@ -19,11 +19,16 @@ import Admin from './pages/Admin';
 import Agendamentos from './pages/Agendamentos';
 import Analiticos from './pages/Analiticos';
 import Backlog from './pages/Backlog';
+import BacklogManutencao from './pages/BacklogManutencao';
 import AgendamentoDetalhe from './pages/AgendamentoDetalhe';
+import AgendamentosManutencao from './pages/AgendamentosManutencao';
+import AgendamentoManutencaoDetalhe from './pages/AgendamentoManutencaoDetalhe';
 import Cadastros from './pages/Cadastros';
 import ResolverQualidade from './pages/ResolverQualidade';
+import ResolverManutencao from './pages/ResolverManutencao';
 import Agenda from './pages/Agenda';
 import VistoriaSeguranca from './pages/VistoriaSeguranca';
+import VistoriaManutencaoDetalhe from './pages/VistoriaManutencaoDetalhe';
 // GH — Gestão de Hierarquia
 import GhLogin from './pages/FCA';
 import DashboardAdm from './pages/DashboardAdm';
@@ -56,6 +61,8 @@ function App() {
             {/* --- ROTAS PÚBLICAS PARA TODOS OS USUÁRIOS LOGADOS --- */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/resolver-qualidade/:id" element={<ProtectedRoute><ResolverQualidade /></ProtectedRoute>} />
+            <Route path="/resolver-manutencao/:id" element={<ProtectedRoute><ResolverManutencao /></ProtectedRoute>} />
+            <Route path="/vistoria-manutencao/:id" element={<ProtectedRoute><ResolverManutencao /></ProtectedRoute>} />
 
             {/* 'terceirizado' só pode ver Dashboard e Backlog, então Backlog é a única outra rota */}
             <Route
@@ -66,6 +73,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/manutencao/backlog"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
+                  <BacklogManutencao />
+                </ProtectedRoute>
+              }
+            />
 
             {/* --- ROTAS RESTRITAS PARA FISCAL E ADMIN --- */}
             <Route
@@ -73,6 +88,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
                   <Agendamentos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manutencao/agendamentos"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <AgendamentosManutencao />
                 </ProtectedRoute>
               }
             />
@@ -89,6 +112,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
                   <AgendamentoDetalhe />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manutencao/agendamento/:id"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <AgendamentoManutencaoDetalhe />
                 </ProtectedRoute>
               }
             />
@@ -124,6 +155,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
                   <VistoriaDetalhe />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manutencao/vistoria/:id"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'fiscal']}>
+                  <VistoriaManutencaoDetalhe />
                 </ProtectedRoute>
               }
             />

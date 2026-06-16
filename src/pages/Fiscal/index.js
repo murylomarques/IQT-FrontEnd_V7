@@ -24,6 +24,7 @@ import {
 
 const Fiscal = () => {
   const [vistorias, setVistorias] = useState([]);
+  const [vistoriasManutencao, setVistoriasManutencao] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,8 +34,22 @@ const Fiscal = () => {
   useEffect(() => {
     const fetchVistoriasDoDia = async () => {
       try {
-        const data = await apiFetch('/api/agenda/minhas-vistorias-hoje');
-        setVistorias(data);
+        const [ativacaoResult, manutencaoResult] = await Promise.allSettled([
+          apiFetch('/api/agenda/minhas-vistorias-hoje'),
+          apiFetch('/api/manutencao/agenda/minhas-vistorias-hoje'),
+        ]);
+
+        if (ativacaoResult.status === 'fulfilled') {
+          setVistorias(Array.isArray(ativacaoResult.value) ? ativacaoResult.value : []);
+        }
+
+        if (manutencaoResult.status === 'fulfilled') {
+          setVistoriasManutencao(Array.isArray(manutencaoResult.value) ? manutencaoResult.value : []);
+        }
+
+        if (ativacaoResult.status === 'rejected' && manutencaoResult.status === 'rejected') {
+          throw new Error('Falha ao carregar vistorias');
+        }
       } catch (err) {
         setError('Não foi possível carregar as vistorias.');
         toast.error('Erro ao buscar dados das vistorias.');
@@ -50,7 +65,14 @@ const Fiscal = () => {
   );
   const vistoriasRealizadas = vistorias.filter(v => v.statusAgendamento === 'Concluído');
 
+  const statusConcluidoValues = ['Concluído', 'ConcluÃ­do'];
+  const manutencaoPendentes = vistoriasManutencao.filter(
+    v => !statusConcluidoValues.includes(v.statusAgendamento) && v.statusAgendamento !== 'Cancelado'
+  );
+  const manutencaoRealizadas = vistoriasManutencao.filter(v => statusConcluidoValues.includes(v.statusAgendamento));
+
   const handleVistoriaClick = (id) => navigate(`/vistoria/${id}`);
+  const handleManutencaoClick = (id) => navigate(`/manutencao/vistoria/${id}`);
 
   if (isLoading) return (
     <FiscalContainer>
@@ -99,6 +121,14 @@ const Fiscal = () => {
             <CardCount>{vistoriasRealizadas.length}</CardCount>
             <CardTitle>Concluídas Hoje</CardTitle>
           </Card>
+          <Card borderColor="var(--warning)">
+            <CardCount>{manutencaoPendentes.length}</CardCount>
+            <CardTitle>Manutenção Pend.</CardTitle>
+          </Card>
+          <Card borderColor="var(--success)">
+            <CardCount>{manutencaoRealizadas.length}</CardCount>
+            <CardTitle>Manutenção Conc.</CardTitle>
+          </Card>
         </CardsContainer>
 
         <ListTitle>
@@ -109,6 +139,16 @@ const Fiscal = () => {
           vistorias={vistoriasPendentes}
           onItemClick={handleVistoriaClick}
           emptyMessage="Nenhuma vistoria pendente para hoje. Bom trabalho!"
+        />
+
+        <ListTitle>
+          <FiClipboard />
+          Vistorias de Manutenção Pendentes
+        </ListTitle>
+        <VistoriaList
+          vistorias={manutencaoPendentes}
+          onItemClick={handleManutencaoClick}
+          emptyMessage="Nenhuma vistoria de manutenção pendente para hoje."
         />
       </PageContent>
     </FiscalContainer>
