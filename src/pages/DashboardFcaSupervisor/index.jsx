@@ -14,13 +14,30 @@ import { CHECKLIST_SECTIONS, PO_QUESTIONS, buildEmptyChecklist, buildEmptyPo } f
 const TABS = ['Analítico', 'Checklist', 'PO'];
 
 const statusStyle = {
-  realizado: { bg: 'rgba(47,122,63,.14)',   color: '#1a5028' },
-  pendente:  { bg: 'rgba(184,108,16,.14)',  color: '#7a4a00' },
-  vencido:   { bg: 'rgba(157,41,38,.14)',   color: '#6d1e1a' },
+  realizado:     { bg: 'rgba(47,122,63,.14)',   color: '#1a5028' },
+  nao_iniciado:  { bg: 'rgba(53,48,45,.10)',    color: '#5a5551' },
+  em_andamento:  { bg: 'rgba(184,108,16,.14)',  color: '#7a4a00' },
+  pendente:      { bg: 'rgba(184,108,16,.14)',  color: '#7a4a00' },
+  vencido:       { bg: 'rgba(157,41,38,.14)',   color: '#6d1e1a' },
 };
+
+const STATUS_LABELS = {
+  realizado: 'Realizado',
+  nao_iniciado: 'Nao iniciado',
+  em_andamento: 'Em andamento',
+  pendente: 'Pendente',
+  vencido: 'Vencido',
+};
+
+const fmtDateTime = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+};
+
 const StatusChip = ({ s }) => (
-  <span style={{ background: statusStyle[s]?.bg, color: statusStyle[s]?.color, padding: '3px 10px', borderRadius: '999px', fontSize: '0.74rem', fontWeight: 700, textTransform: 'capitalize' }}>
-    {s}
+  <span style={{ background: statusStyle[s]?.bg, color: statusStyle[s]?.color, padding: '3px 10px', borderRadius: '999px', fontSize: '0.74rem', fontWeight: 700 }}>
+    {STATUS_LABELS[s] || s}
   </span>
 );
 const CertChip = ({ v }) => (
@@ -73,8 +90,10 @@ const DashboardFcaSupervisor = () => {
   const detailRequiredChecklists = tecDetail?.required_checklists ?? tecDetail?.required_pos ?? 0;
   const detailPoCount = tecDetail?.po_count ?? 0;
   const detailPoProgress = tecDetail?.po_progress ?? tecDetail?.po_days ?? 0;
-  const canCreateChecklist = Boolean(tecDetail && period && !period.is_expired && detailChecklistCount < detailRequiredChecklists);
-  const canCreatePo = Boolean(tecDetail && period && !period.is_expired && detailChecklistCount > detailPoCount);
+  const canCreateChecklist = Boolean(tecDetail && period && !period.is_expired
+    && (tecDetail.can_create_checklist ?? (detailChecklistCount < detailRequiredChecklists)));
+  const canCreatePo = Boolean(tecDetail && period && !period.is_expired
+    && (tecDetail.can_create_po ?? (detailChecklistCount > detailPoCount)));
 
   // ── Load technician detail + forms ───────────────────────────────────────
   const loadTecDetail = useCallback(async (id) => {
@@ -208,7 +227,8 @@ const DashboardFcaSupervisor = () => {
                   <MetricsRow>
                     <Metric><div className="label">Total</div><div className="value">{analytics.metrics.total}</div></Metric>
                     <Metric><div className="label">Realizado</div><div className="value">{analytics.metrics.realizado}</div></Metric>
-                    <Metric><div className="label">Pendente</div><div className="value">{analytics.metrics.pendente}</div></Metric>
+                    <Metric><div className="label">Nao iniciado</div><div className="value">{analytics.metrics.nao_iniciado || 0}</div></Metric>
+                    <Metric><div className="label">Em andamento</div><div className="value">{analytics.metrics.em_andamento || 0}</div></Metric>
                     <Metric><div className="label">Vencido</div><div className="value">{analytics.metrics.vencido}</div></Metric>
                   </MetricsRow>
                 )}
@@ -302,6 +322,12 @@ const DashboardFcaSupervisor = () => {
                         <Btn className="sm" onClick={startNewChecklist}>+ Novo Checklist</Btn>
                       )}
                     </div>
+
+                    {!canCreateChecklist && detailChecklistCount < detailRequiredChecklists && tecDetail.next_checklist_at && (
+                      <Alert $t="warn" style={{ marginBottom: '1rem' }}>
+                        Proximo Checklist deste tecnico liberado em {fmtDateTime(tecDetail.next_checklist_at)}.
+                      </Alert>
+                    )}
 
                     {clLoaded && !viewCl && (
                       <Alert $t={detailChecklistCount >= detailRequiredChecklists ? 'success' : 'warn'}>
@@ -402,9 +428,15 @@ const DashboardFcaSupervisor = () => {
                         ⚠️ Preencha o Checklist deste técnico antes de registrar um PO.
                       </Alert>
                     )}
-                    {period && !period.is_expired && tecDetail.has_checklist && !canCreatePo && detailPoCount < detailRequiredChecklists && (
+                    {period && !period.is_expired && tecDetail.has_checklist && detailPoCount >= detailChecklistCount && detailPoCount < detailRequiredChecklists && (
                       <Alert $t="warn" style={{ marginBottom: '1rem' }}>
                         Realize mais um Checklist deste técnico antes de registrar outro PO.
+                      </Alert>
+                    )}
+
+                    {period && !period.is_expired && tecDetail.has_checklist && !canCreatePo && detailPoCount < detailRequiredChecklists && detailPoCount < detailChecklistCount && tecDetail.next_po_at && (
+                      <Alert $t="warn" style={{ marginBottom: '1rem' }}>
+                        Proximo PO deste tecnico liberado em {fmtDateTime(tecDetail.next_po_at)}.
                       </Alert>
                     )}
 
@@ -418,9 +450,15 @@ const DashboardFcaSupervisor = () => {
                       )}
                     </div>
 
-                    {!tecDetail.isCertificado && tecDetail.has_checklist && (
+                    {tecDetail?.legacy_po_warning && !tecDetail.isCertificado && tecDetail.has_checklist && (
                       <Alert $t="warn" style={{ marginBottom: '1rem' }}>
                         Técnico não certificado — necessita {tecDetail.required_pos} POs em dias diferentes. Máximo 1 PO por dia.
+                      </Alert>
+                    )}
+
+                    {!tecDetail.isCertificado && tecDetail.has_checklist && (
+                      <Alert $t="warn" style={{ marginBottom: '1rem' }}>
+                        Tecnico nao certificado: necessita {tecDetail.required_pos} POs com intervalo minimo de 72 horas por tecnico.
                       </Alert>
                     )}
 
@@ -428,19 +466,20 @@ const DashboardFcaSupervisor = () => {
                       <CardLabel>POs Realizados</CardLabel>
                       <TblWrap style={{ marginTop: '0.8rem' }}>
                         <Tbl>
-                          <thead><tr><th>#</th><th>Data</th><th>Respostas</th></tr></thead>
+                          <thead><tr><th>#</th><th>Data PO</th><th>Registrado em</th><th>Respostas</th></tr></thead>
                           <tbody>
                             {poList.map((p, i) => (
                               <tr key={p.id}>
                                 <td style={{ color: '#9a948f', fontSize: '0.76rem' }}>{i + 1}</td>
                                 <td style={{ fontWeight: 700 }}>{new Date(p.po_date + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+                                <td style={{ color: '#9a948f', fontSize: '0.76rem' }}>{fmtDateTime(p.created_at)}</td>
                                 <td style={{ fontSize: '0.78rem', color: '#5a5551' }}>
                                   {p.answers.filter((a) => a.answer === 'Sim').length}/{p.answers.length} Sim
                                 </td>
                               </tr>
                             ))}
                             {poList.length === 0 && (
-                              <tr><td colSpan={3}><Empty><div className="icon">📋</div>Nenhum PO registrado ainda.</Empty></td></tr>
+                              <tr><td colSpan={4}><Empty><div className="icon">📋</div>Nenhum PO registrado ainda.</Empty></td></tr>
                             )}
                           </tbody>
                         </Tbl>

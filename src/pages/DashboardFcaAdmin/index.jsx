@@ -5,17 +5,44 @@ import {
   FcaGlobal, FcaWrap, Topbar, BrandRow, BrandLogo, BrandMeta, SessionPill,
   Shell, AppLayout, SideNav, NavBtn, ContentArea,
   PageTitle, Card, CardRow, CardLabel, MetricsRow, Metric,
-  TblWrap, Tbl, Btn, SPill, WinBadge, Empty, Alert,
+  FGrid, Fld, Lbl, Sel, TblWrap, Tbl, Btn, SPill, WinBadge, Empty, Alert,
 } from '../FCA/theme';
 import { fcafStorage, fcafFetch, FCAF_ROLE_LABELS } from '../FCAF/api';
 
 const TABS = ['Analítico', 'Base'];
 
 const statusColor = {
-  realizado: { background: 'rgba(47,122,63,.14)', color: '#1a5028' },
-  pendente:  { background: 'rgba(184,108,16,.14)', color: '#7a4a00' },
-  vencido:   { background: 'rgba(157,41,38,.14)',  color: '#6d1e1a' },
+  realizado:     { background: 'rgba(47,122,63,.14)', color: '#1a5028' },
+  nao_iniciado:  { background: 'rgba(53,48,45,.10)', color: '#5a5551' },
+  em_andamento:  { background: 'rgba(184,108,16,.14)', color: '#7a4a00' },
+  pendente:      { background: 'rgba(184,108,16,.14)', color: '#7a4a00' },
+  vencido:       { background: 'rgba(157,41,38,.14)',  color: '#6d1e1a' },
 };
+
+const STATUS_LABELS = {
+  realizado: 'Realizado',
+  nao_iniciado: 'Nao iniciado',
+  em_andamento: 'Em andamento',
+  vencido: 'Vencido',
+};
+
+const fmtDate = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
+};
+
+const fmtDateTime = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+};
+
+const StatusBadge = ({ status, children }) => (
+  <span style={{ ...(statusColor[status] || statusColor.pendente), padding: '2px 10px', borderRadius: '999px', fontSize: '0.76rem', fontWeight: 700 }}>
+    {children || STATUS_LABELS[status] || status || '-'}
+  </span>
+);
 
 const DashboardFcaAdmin = () => {
   const navigate  = useNavigate();
@@ -26,6 +53,7 @@ const DashboardFcaAdmin = () => {
   const [tab,      setTab]      = useState('Analítico');
   const [data,     setData]     = useState(null);
   const [history,  setHistory]  = useState([]);
+  const [filters,  setFilters]  = useState({ period_id: '', regional: '', status: '' });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
 
@@ -35,14 +63,19 @@ const DashboardFcaAdmin = () => {
 
   const load = useCallback(async () => {
     try {
+      const params = new URLSearchParams();
+      if (filters.period_id) params.set('period_id', filters.period_id);
+      if (filters.regional) params.set('regional', filters.regional);
+      if (filters.status) params.set('status', filters.status);
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const [ana, hist] = await Promise.all([
-        fcafFetch('/fcaf/analytics/all'),
+        fcafFetch(`/fcaf/analytics/all${qs}`),
         fcafFetch('/fcaf/periods'),
       ]);
       setData(ana);
       setHistory(hist);
     } catch (err) { toast.error(err.message); }
-  }, []);
+  }, [filters]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -84,10 +117,21 @@ const DashboardFcaAdmin = () => {
 
   const period = data?.period;
   const supervisors = data?.supervisors || [];
-  const totals = supervisors.reduce(
-    (acc, s) => ({ total: acc.total + s.total, realizado: acc.realizado + s.realizado, pendente: acc.pendente + s.pendente, vencido: acc.vencido + s.vencido }),
-    { total: 0, realizado: 0, pendente: 0, vencido: 0 }
+  const totals = data?.metrics || supervisors.reduce(
+    (acc, s) => ({
+      total: acc.total + s.total,
+      realizado: acc.realizado + s.realizado,
+      nao_iniciado: acc.nao_iniciado + (s.nao_iniciado || 0),
+      em_andamento: acc.em_andamento + (s.em_andamento || 0),
+      pendente: acc.pendente + s.pendente,
+      vencido: acc.vencido + s.vencido,
+    }),
+    { total: 0, realizado: 0, nao_iniciado: 0, em_andamento: 0, pendente: 0, vencido: 0 }
   );
+  const regionalOptions = data?.filters?.regionals || [];
+  const statusOptions = data?.filters?.statuses || [];
+  const detailRows = supervisors.flatMap((s) => (s.tecnicos || []).map((t) => ({ supervisor: s, tecnico: t })));
+  const updateFilter = (field, value) => setFilters((prev) => ({ ...prev, [field]: value }));
 
   return (
     <FcaWrap>
@@ -139,11 +183,47 @@ const DashboardFcaAdmin = () => {
                   </Alert>
                 )}
 
+                <Card>
+                  <CardLabel>Filtros</CardLabel>
+                  <FGrid style={{ marginTop: '0.8rem' }}>
+                    <Fld>
+                      <Lbl>Extracao</Lbl>
+                      <Sel value={filters.period_id} onChange={(e) => updateFilter('period_id', e.target.value)}>
+                        <option value="">Atual ativa</option>
+                        {history.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.mes} - {fmtDate(p.base_uploaded_at || p.created_at)}
+                          </option>
+                        ))}
+                      </Sel>
+                    </Fld>
+                    <Fld>
+                      <Lbl>Regional</Lbl>
+                      <Sel value={filters.regional} onChange={(e) => updateFilter('regional', e.target.value)}>
+                        <option value="">Todas</option>
+                        {regionalOptions.map((regional) => (
+                          <option key={regional} value={regional}>{regional}</option>
+                        ))}
+                      </Sel>
+                    </Fld>
+                    <Fld>
+                      <Lbl>Situacao</Lbl>
+                      <Sel value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
+                        <option value="">Todas</option>
+                        {statusOptions.map((status) => (
+                          <option key={status.value} value={status.value}>{status.label}</option>
+                        ))}
+                      </Sel>
+                    </Fld>
+                  </FGrid>
+                </Card>
+
                 <MetricsRow>
                   <Metric><div className="label">Supervisores</div><div className="value">{supervisors.length}</div></Metric>
                   <Metric><div className="label">Total Técnicos</div><div className="value">{totals.total}</div></Metric>
                   <Metric><div className="label">Realizados</div><div className="value">{totals.realizado}</div></Metric>
-                  <Metric><div className="label">Pendentes</div><div className="value">{totals.pendente}</div></Metric>
+                  <Metric><div className="label">Nao iniciados</div><div className="value">{totals.nao_iniciado || 0}</div></Metric>
+                  <Metric><div className="label">Em andamento</div><div className="value">{totals.em_andamento || 0}</div></Metric>
                   <Metric><div className="label">Vencidos</div><div className="value">{totals.vencido}</div></Metric>
                 </MetricsRow>
 
@@ -182,6 +262,52 @@ const DashboardFcaAdmin = () => {
                         ))}
                         {supervisors.length === 0 && (
                           <tr><td colSpan={6}><Empty><div className="icon">📊</div>Nenhum supervisor encontrado.</Empty></td></tr>
+                        )}
+                      </tbody>
+                    </Tbl>
+                  </TblWrap>
+                </Card>
+
+                <Card>
+                  <CardLabel>Detalhe da Extracao</CardLabel>
+                  <TblWrap style={{ marginTop: '0.8rem' }}>
+                    <Tbl>
+                      <thead>
+                        <tr>
+                          <th>Coordenador</th><th>Supervisor</th><th>Regional</th><th>Tecnico</th>
+                          <th>Situacao</th><th>Checklist</th><th>PO</th>
+                          <th>Inicio</th><th>Base subiu</th><th>Fim</th><th>Datas Checklist</th><th>Datas PO</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detailRows.map(({ supervisor, tecnico }) => (
+                          <tr key={`${supervisor.id}-${tecnico.id}`}>
+                            <td style={{ color: '#5a5551' }}>{tecnico.coordenador?.name || supervisor.coordenador?.name || '-'}</td>
+                            <td><strong>{supervisor.name}</strong></td>
+                            <td style={{ color: '#9a948f' }}>{tecnico.regional || supervisor.regional || '-'}</td>
+                            <td><strong>{tecnico.nome}</strong></td>
+                            <td><StatusBadge status={tecnico.status}>{tecnico.status_label || STATUS_LABELS[tecnico.status]}</StatusBadge></td>
+                            <td>{tecnico.checklist_count}/{tecnico.required_checklists}</td>
+                            <td>{tecnico.po_progress}/{tecnico.required_pos}</td>
+                            <td style={{ color: '#9a948f', fontSize: '0.78rem' }}>{fmtDate(tecnico.period_started_at || period?.starts_at)}</td>
+                            <td style={{ color: '#9a948f', fontSize: '0.78rem' }}>{fmtDate(tecnico.base_uploaded_at || period?.base_uploaded_at)}</td>
+                            <td style={{ color: '#9a948f', fontSize: '0.78rem' }}>{fmtDate(tecnico.period_ends_at || period?.ends_at)}</td>
+                            <td style={{ color: '#5a5551', fontSize: '0.75rem', minWidth: 150 }}>
+                              {(tecnico.checklist_dates || []).map((item, idx) => (
+                                <div key={item.id || idx}>{idx + 1}. {fmtDateTime(item.performed_at || item.created_at)}</div>
+                              ))}
+                              {(tecnico.checklist_dates || []).length === 0 && '-'}
+                            </td>
+                            <td style={{ color: '#5a5551', fontSize: '0.75rem', minWidth: 150 }}>
+                              {(tecnico.po_dates || []).map((item, idx) => (
+                                <div key={item.id || idx}>{idx + 1}. {fmtDate(item.performed_at || item.po_date)} <span style={{ color: '#9a948f' }}>({fmtDateTime(item.created_at)})</span></div>
+                              ))}
+                              {(tecnico.po_dates || []).length === 0 && '-'}
+                            </td>
+                          </tr>
+                        ))}
+                        {detailRows.length === 0 && (
+                          <tr><td colSpan={12}><Empty><div className="icon">FCA</div>Nenhum tecnico encontrado para os filtros.</Empty></td></tr>
                         )}
                       </tbody>
                     </Tbl>
