@@ -16,9 +16,6 @@ import {
   FiDownload,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
-
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
 import {
   KpiGrid,
@@ -33,6 +30,8 @@ import {
   NotificationBell,
   NotificationBadge,
 } from '../Backlog/styles';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
 
 const KpiSkeleton = () => (
   <KpiCard>
