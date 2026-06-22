@@ -7,6 +7,7 @@ import { FiUser, FiMapPin, FiHash, FiFileText, FiCheckCircle, FiUpload, FiCheck,
 import Menu from '../../components/Menu';
 import { optimizeImageFile } from '../../utils/imageOptimization';
 import { isMaintenanceIssue, manutencaoQuestionLabels } from '../VistoriaManutencaoDetalhe/checklistData';
+import GerarPDFManutencao from './GerarPDFManutencao';
 
 import {
   LayoutContainer,
@@ -17,7 +18,7 @@ import {
 } from '../Dashboard/styles';
 
 import {
-  PageHero, HeroLeft, HeroBadge, HeroTitle, HeroMeta,
+  PageHero, HeroLeft, HeroBadge, HeroTitle, HeroMeta, HeroRight,
   SummaryGrid, SummaryCard, SummaryValue, SummaryLabel,
   ProgressSection, ProgressBar, ProgressFill, ProgressLabel,
   DetailCard, DetailGrid, DetailItem, DetailIcon, DetailLabel, DetailValue,
@@ -288,6 +289,9 @@ const ResolverManutencao = () => {
                   {vistoria.agenda?.endereco || 'N/A'}
                 </HeroMeta>
               </HeroLeft>
+              <HeroRight>
+                <GerarPDFManutencao vistoria={vistoria} />
+              </HeroRight>
             </PageHero>
 
             <SummaryGrid>

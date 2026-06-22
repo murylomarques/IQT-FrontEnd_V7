@@ -13,8 +13,11 @@ import {
   FiAlertCircle,
   FiBell,
   FiAlertTriangle,
+  FiDownload,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
 
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
 import {
@@ -76,6 +79,9 @@ const BacklogManutencao = () => {
     dataLaudo: '',
     status: 'Todos',
   });
+
+  const [exportDates, setExportDates] = useState({ start: '', end: '' });
+  const [isExporting, setIsExporting] = useState(false);
 
   const [empresaOptions, setEmpresaOptions] = useState([]);
 
@@ -164,6 +170,30 @@ const BacklogManutencao = () => {
     navigate(`/resolver-manutencao/${item.id}`, { state: { sa: item.protocolo } });
   };
 
+  const handleExport = async () => {
+    if (!exportDates.start || !exportDates.end) {
+      toast.warn('Informe o período para exportação.');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const token = user?.token;
+      const url = `${API_BASE_URL}/api/export/manutencao?start_date=${exportDates.start}&end_date=${exportDates.end}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'text/csv' } });
+      if (!res.ok) throw new Error('Falha ao exportar');
+      const blob = await res.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `vistorias_manutencao_${exportDates.start}_${exportDates.end}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      toast.error('Erro ao exportar relatório de manutenção.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <LayoutContainer>
       <Menu isExpanded={isMenuExpanded} setIsExpanded={setIsMenuExpanded} />
@@ -206,6 +236,51 @@ const BacklogManutencao = () => {
             </>
           )}
         </KpiGrid>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          flexWrap: 'wrap',
+          padding: '14px 16px',
+          background: 'var(--bg-1)',
+          border: '1px solid var(--border-0)',
+          borderRadius: 'var(--radius-1)',
+          marginBottom: '16px',
+        }}>
+          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--ink-1)', marginRight: '4px' }}>
+            <FiDownload style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Exportar Relatório Analítico
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <input
+              type="date"
+              value={exportDates.start}
+              onChange={e => setExportDates(p => ({ ...p, start: e.target.value }))}
+              style={{ padding: '6px 10px', background: 'var(--bg-2)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', color: 'var(--ink-0)', fontSize: '0.85rem' }}
+            />
+            <span style={{ color: 'var(--ink-2)', fontSize: '0.8rem' }}>até</span>
+            <input
+              type="date"
+              value={exportDates.end}
+              onChange={e => setExportDates(p => ({ ...p, end: e.target.value }))}
+              style={{ padding: '6px 10px', background: 'var(--bg-2)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', color: 'var(--ink-0)', fontSize: '0.85rem' }}
+            />
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '7px 16px', background: 'var(--brand)', color: '#fff',
+                border: 'none', borderRadius: 'var(--radius-1)', cursor: 'pointer',
+                fontWeight: 700, fontSize: '0.85rem', opacity: isExporting ? 0.7 : 1,
+              }}
+            >
+              <FiDownload size={14} />
+              {isExporting ? 'Exportando...' : 'Exportar CSV'}
+            </button>
+          </div>
+        </div>
 
         <FiltersContainer>
           <FilterField>

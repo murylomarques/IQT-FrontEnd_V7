@@ -50,6 +50,7 @@ const Agenda = () => {
     const [selectedDate, setSelectedDate] = useState(TODAY());
     const [selectedTask, setSelectedTask] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [agendaTipo, setAgendaTipo] = useState('qualidade');
 
     // Live current-time indicator
     useEffect(() => {
@@ -62,10 +63,14 @@ const Agenda = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const response = await apiFetch(`/api/agenda-gantt?date=${selectedDate}`);
+                const endpoint = agendaTipo === 'manutencao'
+                    ? `/api/manutencao/agenda-gantt?date=${selectedDate}`
+                    : `/api/agenda-gantt?date=${selectedDate}`;
+                const response = await apiFetch(endpoint);
                 setTechnicians(response?.resources || []);
                 const formatted = (response?.tasks || []).map(task => {
-                    const [hour, minute] = task.hora_agendamento.split(':');
+                    const hora = task.hora_agendamento || '08:00';
+                    const [hour, minute] = hora.split(':');
                     return { ...task, start: parseInt(hour, 10) + parseInt(minute, 10) / 60, duration: 1 };
                 });
                 setScheduleData(formatted);
@@ -76,7 +81,7 @@ const Agenda = () => {
             }
         };
         fetchData();
-    }, [selectedDate, apiFetch]);
+    }, [selectedDate, agendaTipo, apiFetch]);
 
     // Stats
     const stats = useMemo(() => ({
@@ -117,6 +122,9 @@ const Agenda = () => {
         }
         if (!over || !taskData) return;
 
+        // Manutenção não suporta drag-and-drop
+        if (agendaTipo === 'manutencao') return;
+
         const originalTask = taskData;
         const newTechId = over.data.current?.techId;
         const newStartHourDecimal = originalTask.start + (delta.x / 60);
@@ -147,6 +155,10 @@ const Agenda = () => {
     const handleCloseModal = () => setSelectedTask(null);
 
     const handleDeleteTask = async (taskId) => {
+        if (agendaTipo === 'manutencao') {
+            toast.info('Exclusão não disponível para agendamentos de manutenção nesta tela.');
+            return;
+        }
         if (window.confirm("Tem certeza que deseja excluir este agendamento?")) {
             try {
                 await apiFetch(`/api/agenda/${taskId}`, { method: 'DELETE' });
@@ -160,6 +172,10 @@ const Agenda = () => {
     };
 
     const handleRescheduleTask = async (taskId, newDate) => {
+        if (agendaTipo === 'manutencao') {
+            toast.info('Reagendamento não disponível para manutenção nesta tela.');
+            return;
+        }
         const task = scheduleData.find(t => t.id === taskId);
         if (!task) { toast.error("Tarefa não encontrada."); return; }
         const defaultTime = "08:00";
@@ -183,10 +199,42 @@ const Agenda = () => {
             <ContentArea isMenuExpanded={isMenuExpanded}>
                 <Header>
                     <HeaderTitle>Agenda Interativa</HeaderTitle>
-                    <UserProfile>
-                        <span>{user?.nome}</span>
-                        <button onClick={logout}>Sair</button>
-                    </UserProfile>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', background: 'var(--bg-1)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', overflow: 'hidden' }}>
+                            <button
+                                onClick={() => setAgendaTipo('qualidade')}
+                                style={{
+                                    padding: '7px 16px',
+                                    background: agendaTipo === 'qualidade' ? 'var(--brand)' : 'transparent',
+                                    color: agendaTipo === 'qualidade' ? '#fff' : 'var(--ink-2)',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                }}
+                            >
+                                Qualidade
+                            </button>
+                            <button
+                                onClick={() => setAgendaTipo('manutencao')}
+                                style={{
+                                    padding: '7px 16px',
+                                    background: agendaTipo === 'manutencao' ? 'var(--brand)' : 'transparent',
+                                    color: agendaTipo === 'manutencao' ? '#fff' : 'var(--ink-2)',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                }}
+                            >
+                                Manutenção
+                            </button>
+                        </div>
+                        <UserProfile>
+                            <span>{user?.nome}</span>
+                            <button onClick={logout}>Sair</button>
+                        </UserProfile>
+                    </div>
                 </Header>
 
                 {isLoading ? (

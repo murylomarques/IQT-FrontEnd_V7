@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { FiUpload } from 'react-icons/fi';
 import SkeletonScreen from '../../components/SkeletonScreen';
+import { optimizeImageFile } from '../../utils/imageOptimization';
 
 import {
   manutencaoQuestionsMap,
@@ -29,6 +31,8 @@ import {
   InfoValue
 } from '../../styles/GlobalStyle';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
 const RESULTADOS = ['Aprovado', 'Aprovado com Ressalvas', 'Reprovado'];
 
 const formatarData = d => {
@@ -37,56 +41,107 @@ const formatarData = d => {
   return dt.toLocaleDateString('pt-BR');
 };
 
-const ChecklistQuestion = ({ question, value, onChange }) => (
-  <div style={{
-    padding: '16px',
-    border: '1px solid var(--border-0)',
-    borderRadius: 'var(--radius-1)',
-    background: 'var(--bg-1)',
-    marginBottom: '12px',
-  }}>
-    <p style={{
-      margin: '0 0 12px',
-      color: 'var(--ink-0)',
-      fontWeight: 700,
-      lineHeight: 1.4,
+const ChecklistQuestion = ({ question, value, onChange }) => {
+  const [preview, setPreview] = useState(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+
+  useEffect(() => {
+    if (!value?.foto) { setPreview(null); return; }
+    const url = URL.createObjectURL(value.foto);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [value?.foto]);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsOptimizing(true);
+    const optimized = await optimizeImageFile(file);
+    onChange(question.key, 'foto', optimized);
+    setIsOptimizing(false);
+  };
+
+  return (
+    <div style={{
+      padding: '16px',
+      border: '1px solid var(--border-0)',
+      borderRadius: 'var(--radius-1)',
+      background: 'var(--bg-1)',
+      marginBottom: '12px',
     }}>
-      {question.label}
-    </p>
-    <TypeSelectorGrid>
-      {question.options.map(option => (
-        <TypeButton
-          key={option}
-          type="button"
-          active={value?.status === option}
-          onClick={() => onChange(question.key, 'status', option)}
-        >
-          {option}
-        </TypeButton>
-      ))}
-    </TypeSelectorGrid>
-    {value?.status && (
-      <textarea
-        style={{
-          width: '100%',
-          minHeight: '72px',
-          marginTop: '12px',
-          padding: '10px 12px',
-          border: '1px solid var(--border-0)',
-          borderRadius: 'var(--radius-1)',
-          background: 'var(--bg-2)',
-          color: 'var(--ink-1)',
-          fontFamily: 'inherit',
-          resize: 'vertical',
-          boxSizing: 'border-box',
-        }}
-        placeholder="Observação do item (opcional)"
-        value={value?.observacao || ''}
-        onChange={e => onChange(question.key, 'observacao', e.target.value)}
-      />
-    )}
-  </div>
-);
+      <p style={{ margin: '0 0 12px', color: 'var(--ink-0)', fontWeight: 700, lineHeight: 1.4 }}>
+        {question.label}
+      </p>
+      <TypeSelectorGrid>
+        {question.options.map(option => (
+          <TypeButton
+            key={option}
+            type="button"
+            active={value?.status === option}
+            onClick={() => onChange(question.key, 'status', option)}
+          >
+            {option}
+          </TypeButton>
+        ))}
+      </TypeSelectorGrid>
+
+      {value?.status && (
+        <>
+          <textarea
+            style={{
+              width: '100%',
+              minHeight: '72px',
+              marginTop: '12px',
+              padding: '10px 12px',
+              border: '1px solid var(--border-0)',
+              borderRadius: 'var(--radius-1)',
+              background: 'var(--bg-2)',
+              color: 'var(--ink-1)',
+              fontFamily: 'inherit',
+              resize: 'vertical',
+              boxSizing: 'border-box',
+            }}
+            placeholder="Observação do item (opcional)"
+            value={value?.observacao || ''}
+            onChange={e => onChange(question.key, 'observacao', e.target.value)}
+          />
+
+          <div style={{ marginTop: '10px' }}>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 14px',
+              background: 'var(--bg-2)',
+              border: '1px dashed var(--border-0)',
+              borderRadius: 'var(--radius-1)',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              color: 'var(--ink-2)',
+            }}>
+              <FiUpload size={14} />
+              {isOptimizing ? 'Otimizando...' : value?.foto ? 'Trocar Foto' : 'Anexar Foto (opcional)'}
+              <input type="file" accept="image/*" hidden onChange={handleFileChange} />
+            </label>
+            {value?.foto && (
+              <span style={{ marginLeft: '10px', fontSize: '0.8rem', color: 'var(--ink-2)' }}>
+                {value.foto.name}
+              </span>
+            )}
+          </div>
+
+          {preview && (
+            <img
+              src={preview}
+              alt="preview"
+              style={{ marginTop: '10px', maxWidth: '200px', borderRadius: 'var(--radius-1)', display: 'block' }}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 const VistoriaManutencaoDetalhe = () => {
   const { id } = useParams();
@@ -151,29 +206,25 @@ const VistoriaManutencaoDetalhe = () => {
 
     setIsSubmitting(true);
 
-    const checklist = selectedQuestions.reduce((acc, question) => {
-      acc[question.key] = {
-        status: checklistValues[question.key]?.status,
-        observacao: checklistValues[question.key]?.observacao || null,
-      };
-      return acc;
-    }, {});
+    const formData = new FormData();
+    formData.append('agenda_manutencao_id', id);
+    formData.append('tipo', vistoriaType);
+    formData.append('metros_drop', Number(metrosDrop));
+    formData.append('resultado_final', resultadoFinal);
+    if (observacoes) formData.append('observacoes_gerais', observacoes);
+
+    selectedQuestions.forEach(question => {
+      const val = checklistValues[question.key] || {};
+      formData.append(`checklist[${question.key}][status]`, val.status || '');
+      if (val.observacao) formData.append(`checklist[${question.key}][observacao]`, val.observacao);
+      if (val.foto) formData.append(`checklist[${question.key}][foto]`, val.foto);
+    });
 
     try {
       await apiFetch('/api/manutencao/vistorias', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        data: {
-          agenda_manutencao_id: id,
-          tipo: vistoriaType,
-          metros_drop: Number(metrosDrop),
-          resultado_final: resultadoFinal,
-          observacoes_gerais: observacoes || null,
-          checklist,
-        },
+        headers: { Accept: 'application/json' },
+        data: formData,
       });
 
       toast.success('Vistoria de manutenção enviada.');

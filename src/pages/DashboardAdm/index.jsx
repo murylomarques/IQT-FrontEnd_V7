@@ -89,7 +89,7 @@ const HierNode = ({ node, depth = 0, search = '' }) => {
     </div>
   );
 };
-const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', empresa: '', territory: '', regional: '', title: '', manager_id: '' };
+const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', empresa: '', territory: '', regional: '', title: '', manager_id: '', data_admissao: '', data_demissao: '', observacao: '' };
 
 const DashboardAdm = () => {
   const navigate = useNavigate();
@@ -151,7 +151,7 @@ const DashboardAdm = () => {
   const openEdit   = (u) => {
     if (isReadOnly) return;
     setEditUser(u);
-    setUserForm({ name: u.name, usuario: u.usuario, email: u.email || '', password: '', role: u.role, employee_id: u.employee_id || '', cpf: u.cpf || '', empresa: u.empresa || '', territory: u.territory || '', regional: u.regional || '', title: u.title || '', manager_id: u.manager_id || '' });
+    setUserForm({ name: u.name, usuario: u.usuario, email: u.email || '', password: '', role: u.role, employee_id: u.employee_id || '', cpf: u.cpf || '', empresa: u.empresa || '', territory: u.territory || '', regional: u.regional || '', title: u.title || '', manager_id: u.manager_id || '', data_admissao: u.data_admissao || '', data_demissao: u.data_demissao || '', observacao: u.observacao || '' });
     setSuperSearch(''); setSuperOpen(false);
     setModalOpen(true);
   };
@@ -165,6 +165,9 @@ const DashboardAdm = () => {
       if (!body.password) delete body.password;
       if (!body.email) body.email = null;
       if (!body.manager_id) body.manager_id = null;
+      if (!body.data_admissao) body.data_admissao = null;
+      if (!body.data_demissao) body.data_demissao = null;
+      if (!body.observacao) body.observacao = null;
       if (editUser) {
         await fcaFetch(`/fca/users/${editUser.id}`, { method: 'PUT', body: JSON.stringify(body) });
         toast.success('Usuário atualizado.');
@@ -349,7 +352,7 @@ const DashboardAdm = () => {
                     <Tbl>
                       <thead>
                         <tr>
-                          <th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Território</th><th>Superior</th>
+                          <th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Território</th><th>Superior</th><th>Admissão</th><th>Demissão</th><th>Observação</th>
                           {!isReadOnly && <th>Ações</th>}
                         </tr>
                       </thead>
@@ -362,6 +365,9 @@ const DashboardAdm = () => {
                             <td><RBadge $r={u.role}>{ROLE_LABELS[u.role] || u.role}</RBadge></td>
                             <td>{u.territory || '—'}</td>
                             <td>{u.manager_name || '—'}</td>
+                            <td style={{ color: '#9a948f', whiteSpace: 'nowrap' }}>{u.data_admissao ? new Date(u.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+                            <td style={{ color: u.data_demissao ? '#ae2e2a' : '#9a948f', whiteSpace: 'nowrap', fontWeight: u.data_demissao ? 600 : 400 }}>{u.data_demissao ? new Date(u.data_demissao + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+                            <td style={{ color: '#9a948f', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.observacao || ''}>{u.observacao || '—'}</td>
                             {!isReadOnly && (
                               <td>
                                 <div style={{ display: 'flex', gap: 6 }}>
@@ -373,7 +379,7 @@ const DashboardAdm = () => {
                           </tr>
                         ))}
                         {filtered.length === 0 && (
-                          <tr><td colSpan={isReadOnly ? 6 : 7}><Empty><div className="icon">🔍</div>Nenhum resultado encontrado.</Empty></td></tr>
+                          <tr><td colSpan={isReadOnly ? 9 : 10}><Empty><div className="icon">🔍</div>Nenhum resultado encontrado.</Empty></td></tr>
                         )}
                       </tbody>
                     </Tbl>
@@ -543,6 +549,15 @@ const DashboardAdm = () => {
                 <Fld><Lbl>Território</Lbl><Inp value={userForm.territory} onChange={(e) => setUserForm((p) => ({ ...p, territory: e.target.value }))} /></Fld>
                 <Fld><Lbl>Regional</Lbl><Inp value={userForm.regional} onChange={(e) => setUserForm((p) => ({ ...p, regional: e.target.value }))} /></Fld>
                 <Fld><Lbl>Cargo / Título</Lbl><Inp value={userForm.title} onChange={(e) => setUserForm((p) => ({ ...p, title: e.target.value }))} /></Fld>
+                <Fld><Lbl>Data de Admissão</Lbl><Inp type="date" value={userForm.data_admissao} onChange={(e) => setUserForm((p) => ({ ...p, data_admissao: e.target.value }))} /></Fld>
+                <Fld>
+                  <Lbl>Data de Demissão {role !== 'admin' && <span style={{ fontSize: '0.72rem', color: '#9a948f' }}>(somente admin)</span>}</Lbl>
+                  <Inp type="date" value={userForm.data_demissao} disabled={role !== 'admin'} onChange={(e) => setUserForm((p) => ({ ...p, data_demissao: e.target.value }))} />
+                </Fld>
+                <Fld style={{ gridColumn: '1 / -1' }}>
+                  <Lbl>Observação</Lbl>
+                  <Inp as="textarea" rows={3} value={userForm.observacao} onChange={(e) => setUserForm((p) => ({ ...p, observacao: e.target.value }))} style={{ resize: 'vertical', minHeight: 64 }} />
+                </Fld>
                 <Fld style={{ position: 'relative' }}>
                   <Lbl>Superior</Lbl>
                   <Inp
