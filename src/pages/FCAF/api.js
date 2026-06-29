@@ -27,6 +27,11 @@ export const fcafFetch = async (path, options = {}) => {
     throw new Error(body.error || body.message || `Erro ${res.status}`);
   }
 
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('text/csv') || contentType.includes('application/octet-stream')) {
+    return res.blob();
+  }
+
   return res.json();
 };
 

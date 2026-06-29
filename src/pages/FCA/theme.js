@@ -316,17 +316,30 @@ export const MetricsRow = styled.div`
 `;
 
 export const Metric = styled.div`
+  width: 100%;
+  appearance: none;
+  font-family: 'Sora', sans-serif;
+  text-align: left;
   background: ${C.cardBg};
-  border: 1px solid ${C.cardBorder};
+  border: 1px solid ${({ $active }) => ($active ? C.primary : C.cardBorder)};
   border-radius: 16px;
   padding: 1rem;
   box-shadow: ${C.shadowSm};
   backdrop-filter: blur(6px);
   animation: ${fadeUp} .45s ease;
-  transition: transform .18s, box-shadow .18s;
-  cursor: default;
+  transition: transform .18s, box-shadow .18s, border-color .18s, background .18s;
+  cursor: ${({ onClick }) => (onClick ? 'pointer' : 'default')};
 
   &:hover { transform: translateY(-3px); box-shadow: ${C.shadowMd}; }
+  &:focus-visible {
+    outline: 3px solid rgba(174,46,42,.20);
+    outline-offset: 2px;
+  }
+
+  ${({ $active }) => $active && css`
+    background: ${C.cardBgStrong};
+    box-shadow: ${C.shadowMd};
+  `}
 
   .label {
     font-size: .68rem;

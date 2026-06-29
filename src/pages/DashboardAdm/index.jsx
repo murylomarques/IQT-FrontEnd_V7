@@ -113,6 +113,7 @@ const DashboardAdm = () => {
   const [hierSearch, setHierSearch] = useState('');
   const [superSearch, setSuperSearch] = useState('');
   const [superOpen,   setSuperOpen]   = useState(false);
+  const [metricFilter, setMetricFilter] = useState('');
 
   useEffect(() => {
     if (!fcaStorage.get('token') || !['admin', 'consulta'].includes(role)) navigate('/login/GH');
@@ -254,11 +255,17 @@ const DashboardAdm = () => {
   const pending  = requests.filter((r) => r.status === 'pending');
   const selectedSuperior = users.find((u) => String(u.id) === String(userForm.manager_id));
   const filteredSupers   = users.filter((u) => !superSearch || u.name.toLowerCase().includes(superSearch.toLowerCase()));
+  const dashboardRows = visUsers.filter((u) => {
+    if (!metricFilter) return true;
+    if (metricFilter === 'nao_vinculados') {
+      return ['tecnico', 'supervisao'].includes(u.role) && !u.manager_id;
+    }
+    return u.role === metricFilter;
+  });
 
   return (
     <FcaWrap>
       <FcaGlobal />
-
       {/* ── Topbar ── */}
       <Topbar>
         <BrandRow>
@@ -298,11 +305,21 @@ const DashboardAdm = () => {
                 <PageTitle>Dashboard <em>Geral</em></PageTitle>
                 {metrics && (
                   <MetricsRow>
-                    <Metric><div className="label">Total</div><div className="value">{metrics.total}</div></Metric>
-                    <Metric><div className="label">Técnicos</div><div className="value">{metrics.tecnico}</div></Metric>
-                    <Metric><div className="label">Supervisão</div><div className="value">{metrics.supervisao}</div></Metric>
-                    <Metric><div className="label">Coordenação</div><div className="value">{metrics.coordenacao}</div></Metric>
-                    <Metric><div className="label">Não vinculados</div><div className="value">{metrics.nao_vinculados}</div></Metric>
+                    <Metric as="button" type="button" $active={!metricFilter} onClick={() => setMetricFilter('')}>
+                      <div className="label">Total</div><div className="value">{metrics.total}</div>
+                    </Metric>
+                    <Metric as="button" type="button" $active={metricFilter === 'tecnico'} onClick={() => setMetricFilter(metricFilter === 'tecnico' ? '' : 'tecnico')}>
+                      <div className="label">Técnicos</div><div className="value">{metrics.tecnico}</div>
+                    </Metric>
+                    <Metric as="button" type="button" $active={metricFilter === 'supervisao'} onClick={() => setMetricFilter(metricFilter === 'supervisao' ? '' : 'supervisao')}>
+                      <div className="label">Supervisão</div><div className="value">{metrics.supervisao}</div>
+                    </Metric>
+                    <Metric as="button" type="button" $active={metricFilter === 'coordenacao'} onClick={() => setMetricFilter(metricFilter === 'coordenacao' ? '' : 'coordenacao')}>
+                      <div className="label">Coordenação</div><div className="value">{metrics.coordenacao}</div>
+                    </Metric>
+                    <Metric as="button" type="button" $active={metricFilter === 'nao_vinculados'} onClick={() => setMetricFilter(metricFilter === 'nao_vinculados' ? '' : 'nao_vinculados')}>
+                      <div className="label">Não vinculados</div><div className="value">{metrics.nao_vinculados}</div>
+                    </Metric>
                   </MetricsRow>
                 )}
                 <Card>
@@ -311,7 +328,7 @@ const DashboardAdm = () => {
                     <Tbl>
                       <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Território</th><th>Superior</th></tr></thead>
                       <tbody>
-                        {visUsers.map((u) => (
+                        {dashboardRows.map((u) => (
                           <tr key={u.id}>
                             <td><strong>{u.name}</strong></td>
                             <td style={{ color: '#9a948f' }}>{u.usuario}</td>
@@ -320,7 +337,7 @@ const DashboardAdm = () => {
                             <td style={{ color: '#9a948f' }}>{u.manager_name || '—'}</td>
                           </tr>
                         ))}
-                        {visUsers.length === 0 && (
+                        {dashboardRows.length === 0 && (
                           <tr><td colSpan={5}><Empty><div className="icon">👥</div>Nenhum usuário cadastrado.</Empty></td></tr>
                         )}
                       </tbody>

@@ -115,6 +115,23 @@ const DashboardFcaAdmin = () => {
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
+  const exportFcaCsv = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filters.period_id) params.set('period_id', filters.period_id);
+      if (filters.regional) params.set('regional', filters.regional);
+      if (filters.status) params.set('status', filters.status);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const blob = await fcafFetch(`/fcaf/analytics/all/export${qs}`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fca_extracao_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) { toast.error(err.message); }
+  };
+
   const period = data?.period;
   const supervisors = data?.supervisors || [];
   const totals = data?.metrics || supervisors.reduce(
@@ -132,6 +149,8 @@ const DashboardFcaAdmin = () => {
   const statusOptions = data?.filters?.statuses || [];
   const detailRows = supervisors.flatMap((s) => (s.tecnicos || []).map((t) => ({ supervisor: s, tecnico: t })));
   const updateFilter = (field, value) => setFilters((prev) => ({ ...prev, [field]: value }));
+  const clearStatusFilter = () => updateFilter('status', '');
+  const setStatusFilter = (status) => updateFilter('status', filters.status === status ? '' : status);
 
   return (
     <FcaWrap>
@@ -219,12 +238,24 @@ const DashboardFcaAdmin = () => {
                 </Card>
 
                 <MetricsRow>
-                  <Metric><div className="label">Supervisores</div><div className="value">{supervisors.length}</div></Metric>
-                  <Metric><div className="label">Total Técnicos</div><div className="value">{totals.total}</div></Metric>
-                  <Metric><div className="label">Realizados</div><div className="value">{totals.realizado}</div></Metric>
-                  <Metric><div className="label">Nao iniciados</div><div className="value">{totals.nao_iniciado || 0}</div></Metric>
-                  <Metric><div className="label">Em andamento</div><div className="value">{totals.em_andamento || 0}</div></Metric>
-                  <Metric><div className="label">Vencidos</div><div className="value">{totals.vencido}</div></Metric>
+                  <Metric as="button" type="button" onClick={clearStatusFilter}>
+                    <div className="label">Supervisores</div><div className="value">{supervisors.length}</div>
+                  </Metric>
+                  <Metric as="button" type="button" $active={!filters.status} onClick={clearStatusFilter}>
+                    <div className="label">Total Técnicos</div><div className="value">{totals.total}</div>
+                  </Metric>
+                  <Metric as="button" type="button" $active={filters.status === 'realizado'} onClick={() => setStatusFilter('realizado')}>
+                    <div className="label">Realizados</div><div className="value">{totals.realizado}</div>
+                  </Metric>
+                  <Metric as="button" type="button" $active={filters.status === 'nao_iniciado'} onClick={() => setStatusFilter('nao_iniciado')}>
+                    <div className="label">Nao iniciados</div><div className="value">{totals.nao_iniciado || 0}</div>
+                  </Metric>
+                  <Metric as="button" type="button" $active={filters.status === 'em_andamento'} onClick={() => setStatusFilter('em_andamento')}>
+                    <div className="label">Em andamento</div><div className="value">{totals.em_andamento || 0}</div>
+                  </Metric>
+                  <Metric as="button" type="button" $active={filters.status === 'vencido'} onClick={() => setStatusFilter('vencido')}>
+                    <div className="label">Vencidos</div><div className="value">{totals.vencido}</div>
+                  </Metric>
                 </MetricsRow>
 
                 <Card>
@@ -269,7 +300,10 @@ const DashboardFcaAdmin = () => {
                 </Card>
 
                 <Card>
-                  <CardLabel>Detalhe da Extracao</CardLabel>
+                  <CardRow>
+                    <CardLabel>Detalhe da Extracao</CardLabel>
+                    <Btn $v="ghost" className="sm" onClick={exportFcaCsv}>Exportar CSV</Btn>
+                  </CardRow>
                   <TblWrap style={{ marginTop: '0.8rem' }}>
                     <Tbl>
                       <thead>
