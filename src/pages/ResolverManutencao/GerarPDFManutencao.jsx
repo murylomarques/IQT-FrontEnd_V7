@@ -34,31 +34,32 @@ export default function GerarPDFManutencao({ vistoria }) {
     doc.text(`Resultado Final: ${vistoria.resultado_final || 'N/A'}`, 14, 42);
     doc.text(`Tipo de Vistoria: ${vistoria.tipo || 'N/A'}`, 14, 49);
     doc.text(`Metros de Drop: ${vistoria.metros_drop !== null && vistoria.metros_drop !== undefined ? vistoria.metros_drop + ' m' : 'N/A'}`, 14, 56);
+    doc.text(`Retorno do Tecnico: ${vistoria.retorno_tecnico || 'N/A'}`, 14, 63);
 
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text('Informações do Agendamento', 14, 68);
+    doc.text('Informações do Agendamento', 14, 75);
 
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
-    doc.text(`SA: ${vistoria.agenda?.numero_compromisso || vistoria.agenda?.caso || 'N/A'}`, 14, 76);
-    doc.text(`Cliente: ${vistoria.agenda?.nome_conta || 'N/A'}`, 14, 83);
-    doc.text(`Endereço: ${vistoria.agenda?.endereco || 'N/A'}`, 14, 90);
-    doc.text(`Técnico: ${vistoria.agenda?.nome_tecnico || 'N/A'}`, 14, 97);
-    doc.text(`Empresa: ${vistoria.agenda?.empresa_tecnico || 'N/A'}`, 14, 104);
-    doc.text(`Regional: ${vistoria.agenda?.regional || 'N/A'} / ${vistoria.agenda?.city || 'N/A'}`, 14, 111);
-    doc.text(`Motivo: ${vistoria.agenda?.motivo_vistoria || vistoria.agenda?.tipo_trabalho || 'N/A'}`, 14, 118);
+    doc.text(`SA: ${vistoria.agenda?.numero_compromisso || vistoria.agenda?.caso || 'N/A'}`, 14, 83);
+    doc.text(`Cliente: ${vistoria.agenda?.nome_conta || 'N/A'}`, 14, 90);
+    doc.text(`Endereço: ${vistoria.agenda?.endereco || 'N/A'}`, 14, 97);
+    doc.text(`Técnico: ${vistoria.agenda?.nome_tecnico || 'N/A'}`, 14, 104);
+    doc.text(`Empresa: ${vistoria.agenda?.empresa_tecnico || 'N/A'}`, 14, 111);
+    doc.text(`Regional: ${vistoria.agenda?.regional || 'N/A'} / ${vistoria.agenda?.city || 'N/A'}`, 14, 118);
+    doc.text(`Motivo: ${vistoria.agenda?.motivo_vistoria || vistoria.agenda?.tipo_trabalho || 'N/A'}`, 14, 125);
 
     if (vistoria.observacoes_gerais) {
       const obsLines = doc.splitTextToSize(`Observações: ${vistoria.observacoes_gerais}`, 180);
-      doc.text(obsLines, 14, 125);
+      doc.text(obsLines, 14, 132);
     }
 
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(13);
-    doc.text('Checklist da Vistoria', 14, 138);
+    doc.text('Checklist da Vistoria', 14, 145);
 
-    let y = 150;
+    let y = 157;
 
     for (const item of (vistoria.checklist_itens || [])) {
       if (y > 265) { doc.addPage(); y = 20; }

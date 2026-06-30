@@ -28,7 +28,7 @@ export const TaskModal = ({ task, isOpen, onClose, onDelete, onReschedule }) => 
             toast.warn("Selecione uma nova data para reagendar.");
             return;
         }
-        onReschedule(task.id, newDate);
+        onReschedule(task, newDate);
     };
 
     const badgeConfig = STATUS_BADGE_CONFIG[task.statusAgendamento] || STATUS_BADGE_CONFIG['Pendente'];
@@ -39,7 +39,7 @@ export const TaskModal = ({ task, isOpen, onClose, onDelete, onReschedule }) => 
 
                 <ModalHeader>
                     <ModalTitleGroup>
-                        <ModalCaso>SA: {task.caso}</ModalCaso>
+                        <ModalCaso>{task.fluxo ? `${task.fluxo} | ` : ''}SA: {task.numero_compromisso || task.caso}</ModalCaso>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                             <StatusBadge bg={badgeConfig.bg} color={badgeConfig.color}>
                                 {task.statusAgendamento}
@@ -78,7 +78,7 @@ export const TaskModal = ({ task, isOpen, onClose, onDelete, onReschedule }) => 
                         </PrimaryButton>
                     </RescheduleSection>
 
-                    <DeleteButton onClick={() => onDelete(task.id)}>
+                    <DeleteButton onClick={() => onDelete(task)}>
                         Excluir
                     </DeleteButton>
                 </ModalFooter>

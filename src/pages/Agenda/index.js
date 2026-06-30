@@ -13,7 +13,6 @@ import {
     TimelineWrapper, TimelineHeader, TimelineRowsContainer, TimelineRow, CurrentTimeIndicator,
     DateNavGroup, NavButton, TodayButton, DateDisplay, DateInput, ControlRight, LegendGroup, LegendItem, LegendDot,
     StatsRow, StatCard, StatValue, StatLabel,
-    STATUS_BADGE_CONFIG,
 } from './styles';
 
 const LEGEND = [
@@ -22,6 +21,7 @@ const LEGEND = [
     { label: 'Realizando', color: '#8b5cf6' },
     { label: 'Caminho',   color: '#f59e0b' },
     { label: 'Reparo',    color: '#ef4444' },
+    { label: 'Manutenção', color: '#0f766e' },
 ];
 
 const getInitials = (name = '') =>
@@ -50,7 +50,7 @@ const Agenda = () => {
     const [selectedDate, setSelectedDate] = useState(TODAY());
     const [selectedTask, setSelectedTask] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [agendaTipo, setAgendaTipo] = useState('qualidade');
+    const [agendaTipo, setAgendaTipo] = useState('integrada');
 
     // Live current-time indicator
     useEffect(() => {
@@ -63,16 +63,44 @@ const Agenda = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const endpoint = agendaTipo === 'manutencao'
-                    ? `/api/manutencao/agenda-gantt?date=${selectedDate}`
-                    : `/api/agenda-gantt?date=${selectedDate}`;
-                const response = await apiFetch(endpoint);
-                setTechnicians(response?.resources || []);
-                const formatted = (response?.tasks || []).map(task => {
+                const formatTasks = (tasks, agendaKind, fluxo) => (tasks || []).map(task => {
                     const hora = task.hora_agendamento || '08:00';
                     const [hour, minute] = hora.split(':');
-                    return { ...task, start: parseInt(hour, 10) + parseInt(minute, 10) / 60, duration: 1 };
+                    return {
+                        ...task,
+                        agenda_kind: agendaKind,
+                        fluxo,
+                        dragId: `${agendaKind}-${task.id}`,
+                        start: parseInt(hour, 10) + parseInt(minute, 10) / 60,
+                        duration: 1,
+                    };
                 });
+
+                const loadQualidade = () => apiFetch(`/api/agenda-gantt?date=${selectedDate}`);
+                const loadManutencao = () => apiFetch(`/api/manutencao/agenda-gantt?date=${selectedDate}`);
+
+                let responses = [];
+                if (agendaTipo === 'integrada') {
+                    responses = await Promise.all([
+                        loadQualidade().then(response => ({ response, agendaKind: 'qualidade', fluxo: 'Ativação' })),
+                        loadManutencao().then(response => ({ response, agendaKind: 'manutencao', fluxo: 'Manutenção' })),
+                    ]);
+                } else if (agendaTipo === 'manutencao') {
+                    responses = [{ response: await loadManutencao(), agendaKind: 'manutencao', fluxo: 'Manutenção' }];
+                } else {
+                    responses = [{ response: await loadQualidade(), agendaKind: 'qualidade', fluxo: 'Ativação' }];
+                }
+
+                const resourceMap = new Map();
+                responses.forEach(({ response }) => {
+                    (response?.resources || []).forEach(resource => resourceMap.set(resource.id, resource));
+                });
+
+                const formatted = responses.flatMap(({ response, agendaKind, fluxo }) =>
+                    formatTasks(response?.tasks, agendaKind, fluxo)
+                );
+
+                setTechnicians(Array.from(resourceMap.values()));
                 setScheduleData(formatted);
             } catch {
                 toast.error("Erro ao carregar a agenda.");
@@ -114,16 +142,13 @@ const Agenda = () => {
     const handleDragEnd = async (event) => {
         const { active, over, delta } = event;
         const clickedTaskId = active.id;
-        const taskData = scheduleData.find(t => t.id === clickedTaskId);
+        const taskData = scheduleData.find(t => (t.dragId || t.id) === clickedTaskId);
 
         if (Math.abs(delta.x) < 5 && Math.abs(delta.y) < 5) {
             if (taskData) setSelectedTask(taskData);
             return;
         }
         if (!over || !taskData) return;
-
-        // Manutenção não suporta drag-and-drop
-        if (agendaTipo === 'manutencao') return;
 
         const originalTask = taskData;
         const newTechId = over.data.current?.techId;
@@ -136,34 +161,42 @@ const Agenda = () => {
         if (newTechId === originalTask.fiscal_id && newTime === originalTask.hora_agendamento) return;
 
         setScheduleData(prev => prev.map(t =>
-            t.id === clickedTaskId ? { ...t, fiscal_id: newTechId, start: roundedStart, hora_agendamento: newTime } : t
+            (t.dragId || t.id) === clickedTaskId ? { ...t, fiscal_id: newTechId, start: roundedStart, hora_agendamento: newTime } : t
         ));
 
         try {
-            await apiFetch(`/api/agenda-gantt/${clickedTaskId}`, {
+            const endpoint = originalTask.agenda_kind === 'manutencao'
+                ? `/api/manutencao/agenda-gantt/${originalTask.id}`
+                : `/api/agenda-gantt/${originalTask.id}`;
+
+            await apiFetch(endpoint, {
                 method: 'PATCH',
                 data: { fiscal_id: newTechId, hora_agendamento: newTime },
             });
             toast.success("Agenda atualizada!");
         } catch {
             toast.error("Falha ao salvar. Desfazendo.");
-            setScheduleData(prev => prev.map(t => t.id === clickedTaskId ? originalTask : t));
+            setScheduleData(prev => prev.map(t => (t.dragId || t.id) === clickedTaskId ? originalTask : t));
         }
     };
 
     // --- MODAL ---
     const handleCloseModal = () => setSelectedTask(null);
 
-    const handleDeleteTask = async (taskId) => {
-        if (agendaTipo === 'manutencao') {
-            toast.info('Exclusão não disponível para agendamentos de manutenção nesta tela.');
-            return;
-        }
+    const handleDeleteTask = async (taskOrId) => {
+        const task = typeof taskOrId === 'object'
+            ? taskOrId
+            : scheduleData.find(t => (t.dragId || t.id) === taskOrId || t.id === taskOrId);
+        if (!task) return;
+
         if (window.confirm("Tem certeza que deseja excluir este agendamento?")) {
             try {
-                await apiFetch(`/api/agenda/${taskId}`, { method: 'DELETE' });
+                const endpoint = task.agenda_kind === 'manutencao'
+                    ? `/api/manutencao/agenda/${task.id}`
+                    : `/api/agenda/${task.id}`;
+                await apiFetch(endpoint, { method: 'DELETE' });
                 toast.success("Agendamento excluído!");
-                setScheduleData(prev => prev.filter(t => t.id !== taskId));
+                setScheduleData(prev => prev.filter(t => (t.dragId || t.id) !== (task.dragId || task.id)));
                 handleCloseModal();
             } catch {
                 toast.error("Erro ao excluir o agendamento.");
@@ -171,21 +204,23 @@ const Agenda = () => {
         }
     };
 
-    const handleRescheduleTask = async (taskId, newDate) => {
-        if (agendaTipo === 'manutencao') {
-            toast.info('Reagendamento não disponível para manutenção nesta tela.');
-            return;
-        }
-        const task = scheduleData.find(t => t.id === taskId);
+    const handleRescheduleTask = async (taskOrId, newDate) => {
+        const task = typeof taskOrId === 'object'
+            ? taskOrId
+            : scheduleData.find(t => (t.dragId || t.id) === taskOrId || t.id === taskOrId);
         if (!task) { toast.error("Tarefa não encontrada."); return; }
         const defaultTime = "08:00";
         try {
-            await apiFetch(`/api/agenda-gantt/${taskId}`, {
+            const endpoint = task.agenda_kind === 'manutencao'
+                ? `/api/manutencao/agenda-gantt/${task.id}`
+                : `/api/agenda-gantt/${task.id}`;
+
+            await apiFetch(endpoint, {
                 method: 'PATCH',
                 data: { data_agendamento: newDate, fiscal_id: task.fiscal_id, hora_agendamento: defaultTime },
             });
             toast.success(`Reagendado para ${newDate.split('-').reverse().join('/')} às ${defaultTime}.`);
-            setScheduleData(prev => prev.filter(t => t.id !== taskId));
+            setScheduleData(prev => prev.filter(t => (t.dragId || t.id) !== (task.dragId || task.id)));
             handleCloseModal();
         } catch {
             toast.error("Erro ao reagendar a tarefa.");
@@ -201,6 +236,20 @@ const Agenda = () => {
                     <HeaderTitle>Agenda Interativa</HeaderTitle>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ display: 'flex', background: 'var(--bg-1)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', overflow: 'hidden' }}>
+                            <button
+                                onClick={() => setAgendaTipo('integrada')}
+                                style={{
+                                    padding: '7px 16px',
+                                    background: agendaTipo === 'integrada' ? 'var(--brand)' : 'transparent',
+                                    color: agendaTipo === 'integrada' ? '#fff' : 'var(--ink-2)',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                }}
+                            >
+                                Integrada
+                            </button>
                             <button
                                 onClick={() => setAgendaTipo('qualidade')}
                                 style={{
@@ -336,11 +385,11 @@ const Agenda = () => {
                                                         .filter(task => task.fiscal_id === tech.id)
                                                         .map(task => (
                                                             <Task
-                                                                key={task.id}
+                                                                key={task.dragId || task.id}
                                                                 task={task}
                                                                 start={task.start}
                                                                 duration={task.duration}
-                                                                title={`SA: ${task.caso} | Status: ${task.statusAgendamento}`}
+                                                                title={`${task.fluxo || 'Agenda'} | SA: ${task.numero_compromisso || task.caso || 'N/A'} | Status: ${task.statusAgendamento}`}
                                                             />
                                                         ))
                                                     }

@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Menu from '../../components/Menu';
+import { jsPDF } from 'jspdf';
+import { manutencaoQuestionLabels } from '../VistoriaManutencaoDetalhe/checklistData';
 import {
   FiUser,
   FiBriefcase,
@@ -167,6 +169,65 @@ const BacklogManutencao = () => {
 
   const handleResolverClick = (item) => {
     navigate(`/resolver-manutencao/${item.id}`, { state: { sa: item.protocolo } });
+  };
+
+  const generateMaintenancePdf = (vistoria) => {
+    const doc = new jsPDF();
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Laudo de Vistoria de Manutencao', 14, 16);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(10);
+    const headerLines = [
+      `ID: ${vistoria.id}`,
+      `Status: ${vistoria.status_laudo || 'N/A'}`,
+      `Resultado: ${vistoria.resultado_final || 'N/A'}`,
+      `Retorno do tecnico: ${vistoria.retorno_tecnico || 'N/A'}`,
+      `SA: ${vistoria.agenda?.numero_compromisso || vistoria.agenda?.caso || 'N/A'}`,
+      `Tecnico: ${vistoria.agenda?.nome_tecnico || 'N/A'}`,
+      `Empresa: ${vistoria.agenda?.empresa_tecnico || 'N/A'}`,
+      `Regional/Cidade: ${vistoria.agenda?.regional || 'N/A'} / ${vistoria.agenda?.city || 'N/A'}`,
+    ];
+    headerLines.forEach((line, index) => doc.text(line, 14, 28 + index * 6));
+
+    let y = 84;
+    doc.setFont('Helvetica', 'bold');
+    doc.text('Checklist', 14, y);
+    y += 8;
+
+    (vistoria.checklist_itens || []).forEach((item, index) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 18;
+      }
+      const label = manutencaoQuestionLabels[item.item_key] || item.item_key.replace(/_/g, ' ');
+      const lines = doc.splitTextToSize(`${index + 1}. ${label}`, 180);
+      doc.setFont('Helvetica', 'bold');
+      doc.text(lines, 14, y);
+      y += lines.length * 5;
+
+      doc.setFont('Helvetica', 'normal');
+      doc.text(`Resposta: ${item.status || 'N/A'} | Correcao: ${item.status_correcao || 'Pendente'}`, 14, y);
+      y += 6;
+      if (item.observacao) {
+        const obsLines = doc.splitTextToSize(`Observacao: ${item.observacao}`, 180);
+        doc.text(obsLines, 14, y);
+        y += obsLines.length * 5;
+      }
+      y += 4;
+    });
+
+    doc.save(`laudo_manutencao_${vistoria.id}.pdf`);
+  };
+
+  const handleGeneratePdf = async (item) => {
+    try {
+      const vistoria = await apiFetch(`/api/manutencao/vistorias/${item.id}/data-pdf`);
+      generateMaintenancePdf(vistoria);
+    } catch {
+      toast.error('Erro ao gerar laudo de manutenção.');
+    }
   };
 
   const handleExport = async () => {
@@ -397,6 +458,9 @@ const BacklogManutencao = () => {
                           )}
                           <button title="Resolver" onClick={() => handleResolverClick(row)}>
                             <FiCheckSquare />
+                          </button>
+                          <button title="Gerar Laudo" onClick={() => handleGeneratePdf(row)}>
+                            <FiDownload />
                           </button>
                         </ActionButtons>
                       </td>

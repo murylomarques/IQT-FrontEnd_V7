@@ -12,6 +12,7 @@ import { FiDownload, FiFile, FiSearch, FiPrinter, FiXCircle, FiCalendar, FiEye, 
 // --- Templates de PDF ---
 import VistoriaPdfTemplate from '../../components/VistoriaPdfTemplate';
 import VistoriaSegurancaPdfTemplate from '../../components/VistoriaSegurancaPdfTemplate';
+import { manutencaoQuestionLabels } from '../VistoriaManutencaoDetalhe/checklistData';
 
 // --- Estilos ---
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
@@ -274,6 +275,141 @@ const Cadastros = () => {
     }
   };
 
+  const handleExportManutencaoCsv = async () => {
+    if (!startDate || !endDate) {
+      toast.warn('Por favor, selecione a data de início e a data de fim.');
+      return;
+    }
+
+    setIsExporting(true);
+    toast.info('Exportando CSV de Manutenção...');
+
+    try {
+      const responseBlob = await apiFetch(`/api/export/manutencao?start_date=${startDate}&end_date=${endDate}`, {
+        responseType: 'blob',
+      });
+
+      const textData = await responseBlob.text();
+      const cleanText = textData.trim().replace(/^\uFEFF/, '');
+      const semicolonCsvContent = convertCsvDelimiter(cleanText);
+      const finalCsvContent = '\uFEFF' + semicolonCsvContent;
+
+      const blob = new Blob([finalCsvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'vistorias_manutencao.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('CSV de Manutenção exportado com sucesso!');
+    } catch {
+      toast.error('Ocorreu um erro ao exportar o CSV de Manutenção.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const createManutencaoPdfBlob = (vistoria) => {
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    let y = 42;
+
+    pdf.setFont('Helvetica', 'bold');
+    pdf.setFontSize(16);
+    pdf.text('Laudo de Vistoria de Manutencao', 40, y);
+    y += 24;
+
+    pdf.setFont('Helvetica', 'normal');
+    pdf.setFontSize(10);
+    const rows = [
+      `ID: ${vistoria.id}`,
+      `Data: ${vistoria.created_at ? new Date(vistoria.created_at).toLocaleString('pt-BR') : 'N/A'}`,
+      `Status: ${vistoria.status_laudo || 'N/A'}`,
+      `Resultado: ${vistoria.resultado_final || 'N/A'}`,
+      `Retorno do tecnico: ${vistoria.retorno_tecnico || 'N/A'}`,
+      `SA: ${vistoria.agenda?.numero_compromisso || vistoria.agenda?.caso || 'N/A'}`,
+      `Tecnico: ${vistoria.agenda?.nome_tecnico || 'N/A'}`,
+      `Empresa: ${vistoria.agenda?.empresa_tecnico || 'N/A'}`,
+      `Cliente: ${vistoria.agenda?.nome_conta || 'N/A'}`,
+      `Endereco: ${vistoria.agenda?.endereco || 'N/A'}`,
+    ];
+
+    rows.forEach((row) => {
+      pdf.text(row, 40, y);
+      y += 14;
+    });
+
+    y += 10;
+    pdf.setFont('Helvetica', 'bold');
+    pdf.text('Checklist', 40, y);
+    y += 16;
+
+    (vistoria.checklist_itens || []).forEach((item, index) => {
+      if (y > 760) {
+        pdf.addPage();
+        y = 42;
+      }
+
+      const label = manutencaoQuestionLabels[item.item_key] || item.item_key.replace(/_/g, ' ');
+      const lines = pdf.splitTextToSize(`${index + 1}. ${label}`, 510);
+      pdf.setFont('Helvetica', 'bold');
+      pdf.text(lines, 40, y);
+      y += lines.length * 12;
+
+      pdf.setFont('Helvetica', 'normal');
+      pdf.text(`Resposta: ${item.status || 'N/A'} | Correcao: ${item.status_correcao || 'Pendente'}`, 40, y);
+      y += 14;
+
+      if (item.observacao) {
+        const obsLines = pdf.splitTextToSize(`Observacao: ${item.observacao}`, 510);
+        pdf.text(obsLines, 40, y);
+        y += obsLines.length * 12;
+      }
+
+      y += 8;
+    });
+
+    return pdf.output('blob');
+  };
+
+  const handleExportManutencaoPdfs = async () => {
+    if (!startDate || !endDate) {
+      toast.warn('Por favor, selecione a data de início e a data de fim.');
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      toast.info('Buscando vistorias de manutenção...');
+      const ids = await apiFetch(`/api/manutencao/vistorias/ids-por-periodo?start_date=${startDate}&end_date=${endDate}`);
+
+      if (!ids || ids.length === 0) {
+        toast.warn('Nenhuma vistoria de manutenção encontrada para o período selecionado.');
+        return;
+      }
+
+      const zip = new JSZip();
+      toast.info(`Gerando ${ids.length} laudos de manutenção...`);
+
+      for (const id of ids) {
+        const data = await apiFetch(`/api/manutencao/vistorias/${id}/data-pdf`);
+        zip.file(`vistoria_manutencao_${id}.pdf`, createManutencaoPdfBlob(data));
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `Vistorias_Manutencao_${startDate}_a_${endDate}.zip`);
+      toast.success('Exportação de PDFs de Manutenção concluída!');
+    } catch {
+      toast.error('Ocorreu um erro durante a exportação dos PDFs de Manutenção.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleExportPdfs = async () => {
     if (!startDate || !endDate) {
       toast.warn('Por favor, selecione a data de início e a data de fim.');
@@ -375,9 +511,19 @@ const Cadastros = () => {
               <span>CSV Segurança</span>
             </ExportButton>
 
+            <ExportButton onClick={handleExportManutencaoCsv} disabled={isExporting}>
+              <FiDownload size={16} />
+              <span>CSV Manutenção</span>
+            </ExportButton>
+
             <ExportButton onClick={handleExportPdfs} disabled={isExporting}>
               <FiFile size={16} />
               <span>PDFs Qualidade</span>
+            </ExportButton>
+
+            <ExportButton onClick={handleExportManutencaoPdfs} disabled={isExporting}>
+              <FiFile size={16} />
+              <span>PDFs Manutenção</span>
             </ExportButton>
           </ExportContainer>
 

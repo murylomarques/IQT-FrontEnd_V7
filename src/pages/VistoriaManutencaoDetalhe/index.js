@@ -31,19 +31,35 @@ import {
   InfoValue
 } from '../../styles/GlobalStyle';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
-
-const RESULTADOS = ['Aprovado', 'Aprovado com Ressalvas', 'Reprovado'];
-
 const formatarData = d => {
   if (!d) return 'N/A';
   const dt = new Date(d);
   return dt.toLocaleDateString('pt-BR');
 };
 
+const normalizeAnswer = (value = '') =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const isQuestionIssue = (question, value) => {
+  const status = normalizeAnswer(value?.status);
+  if (!status) return false;
+  if (status === 'nao conforme') return true;
+  return question.issueValue ? status === normalizeAnswer(question.issueValue) : false;
+};
+
+const getResultadoFinal = (hasIssue, retornoTecnico) => {
+  if (hasIssue) return 'Reprovado';
+  return retornoTecnico === 'Sim' ? 'Aprovado com Ressalvas' : 'Aprovado';
+};
+
 const ChecklistQuestion = ({ question, value, onChange }) => {
   const [preview, setPreview] = useState(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const requiresPhoto = isQuestionIssue(question, value);
 
   useEffect(() => {
     if (!value?.foto) { setPreview(null); return; }
@@ -120,12 +136,23 @@ const ChecklistQuestion = ({ question, value, onChange }) => {
               color: 'var(--ink-2)',
             }}>
               <FiUpload size={14} />
-              {isOptimizing ? 'Otimizando...' : value?.foto ? 'Trocar Foto' : 'Anexar Foto (opcional)'}
+              {isOptimizing
+                ? 'Otimizando...'
+                : value?.foto
+                  ? 'Trocar Foto'
+                  : requiresPhoto
+                    ? 'Anexar Foto (obrigatorio)'
+                    : 'Anexar Foto (opcional)'}
               <input type="file" accept="image/*" hidden onChange={handleFileChange} />
             </label>
             {value?.foto && (
               <span style={{ marginLeft: '10px', fontSize: '0.8rem', color: 'var(--ink-2)' }}>
                 {value.foto.name}
+              </span>
+            )}
+            {requiresPhoto && !value?.foto && (
+              <span style={{ display: 'block', marginTop: '6px', fontSize: '0.78rem', color: 'var(--danger, #ae2e2a)' }}>
+                Foto obrigatoria para esta resposta.
               </span>
             )}
           </div>
@@ -153,7 +180,7 @@ const VistoriaManutencaoDetalhe = () => {
   const [vistoriaType, setVistoriaType] = useState(null);
   const [checklistValues, setChecklistValues] = useState({});
   const [metrosDrop, setMetrosDrop] = useState('');
-  const [resultadoFinal, setResultadoFinal] = useState('');
+  const [retornoTecnico, setRetornoTecnico] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -175,11 +202,24 @@ const VistoriaManutencaoDetalhe = () => {
     vistoriaType ? (manutencaoQuestionsMap[vistoriaType] || []) : []
   ), [vistoriaType]);
 
+  const hasIssue = useMemo(() => (
+    selectedQuestions.some(q => isQuestionIssue(q, checklistValues[q.key] || {}))
+  ), [selectedQuestions, checklistValues]);
+
+  const resultadoFinal = useMemo(() => (
+    retornoTecnico ? getResultadoFinal(hasIssue, retornoTecnico) : ''
+  ), [hasIssue, retornoTecnico]);
+
   const isFormValid = useMemo(() => {
-    if (!vistoriaType || !resultadoFinal) return false;
+    if (!vistoriaType || !retornoTecnico) return false;
     if (metrosDrop === '' || Number(metrosDrop) < 0) return false;
-    return selectedQuestions.every(q => checklistValues[q.key]?.status);
-  }, [vistoriaType, resultadoFinal, metrosDrop, selectedQuestions, checklistValues]);
+    return selectedQuestions.every(q => {
+      const value = checklistValues[q.key] || {};
+      if (!value.status) return false;
+      if (isQuestionIssue(q, value) && !value.foto) return false;
+      return true;
+    });
+  }, [vistoriaType, retornoTecnico, metrosDrop, selectedQuestions, checklistValues]);
 
   const handleChecklistChange = (key, field, val) => {
     setChecklistValues(prev => ({
@@ -200,7 +240,7 @@ const VistoriaManutencaoDetalhe = () => {
     e.preventDefault();
 
     if (!isFormValid) {
-      toast.warn('Checklist de manutenção incompleto.');
+      toast.warn('Checklist de manutenção incompleto. Verifique o retorno tecnico e as fotos obrigatorias.');
       return;
     }
 
@@ -210,6 +250,7 @@ const VistoriaManutencaoDetalhe = () => {
     formData.append('agenda_manutencao_id', id);
     formData.append('tipo', vistoriaType);
     formData.append('metros_drop', Number(metrosDrop));
+    formData.append('retorno_tecnico', retornoTecnico);
     formData.append('resultado_final', resultadoFinal);
     if (observacoes) formData.append('observacoes_gerais', observacoes);
 
@@ -333,19 +374,36 @@ const VistoriaManutencaoDetalhe = () => {
         )}
 
         <SectionCard>
-          <SectionTitle>Resultado Final</SectionTitle>
+          <SectionTitle>Retorno do Técnico</SectionTitle>
+          <p style={{ marginTop: 0, color: 'var(--ink-1)' }}>É necessário o retorno do técnico?</p>
           <TypeSelectorGrid>
-            {RESULTADOS.map(resultado => (
-              <TypeButton
-                key={resultado}
-                type="button"
-                active={resultadoFinal === resultado}
-                onClick={() => setResultadoFinal(resultado)}
-              >
-                {resultado}
-              </TypeButton>
-            ))}
+            <TypeButton type="button" active={retornoTecnico === 'Sim'} onClick={() => setRetornoTecnico('Sim')}>
+              Sim
+            </TypeButton>
+            <TypeButton type="button" active={retornoTecnico === 'Não'} onClick={() => setRetornoTecnico('Não')}>
+              Não
+            </TypeButton>
           </TypeSelectorGrid>
+        </SectionCard>
+
+        <SectionCard>
+          <SectionTitle>Resultado Final</SectionTitle>
+          <InfoGrid>
+            <InfoItem>
+              <InfoLabel>Classificação automática:</InfoLabel>
+              <InfoValue>{resultadoFinal || 'Preencha o checklist e o retorno do técnico'}</InfoValue>
+            </InfoItem>
+            <InfoItem>
+              <InfoLabel>Regra aplicada:</InfoLabel>
+              <InfoValue>
+                {hasIssue
+                  ? 'Item não conforme identificado'
+                  : retornoTecnico === 'Sim'
+                    ? 'Sem não conformidade, mas com retorno técnico'
+                    : 'Sem pendências'}
+              </InfoValue>
+            </InfoItem>
+          </InfoGrid>
         </SectionCard>
 
         <SectionCard>

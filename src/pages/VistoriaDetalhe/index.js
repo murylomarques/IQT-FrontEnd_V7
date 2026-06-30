@@ -88,8 +88,7 @@ const VistoriaDetalhe = () => {
       const item = checklistValues[q.key];
       if (!item || !item.status) return false;
 
-      const requiresPhoto = q.requiresPhoto !== false;
-      if (item.status === "Não Conforme" && requiresPhoto) {
+      if (item.status === "Não Conforme") {
         return !!item.foto;
       }
 
@@ -278,7 +277,7 @@ const VistoriaDetalhe = () => {
                 itemKey={q.key}
                 value={checklistValues[q.key] || {}}
                 onChange={handleChecklistChange}
-                requiresPhoto={q.requiresPhoto !== false}
+                requiresPhoto
               />
             ))}
 

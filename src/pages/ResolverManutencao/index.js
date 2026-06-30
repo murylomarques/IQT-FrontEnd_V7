@@ -349,6 +349,13 @@ const ResolverManutencao = () => {
                   </div>
                 </DetailItem>
                 <DetailItem>
+                  <DetailIcon><FiAlertTriangle /></DetailIcon>
+                  <div>
+                    <DetailLabel>Retorno do Técnico</DetailLabel>
+                    <DetailValue>{vistoria.retorno_tecnico || 'N/A'}</DetailValue>
+                  </div>
+                </DetailItem>
+                <DetailItem>
                   <DetailIcon><FiMapPin /></DetailIcon>
                   <div>
                     <DetailLabel>Regional/Cidade</DetailLabel>
