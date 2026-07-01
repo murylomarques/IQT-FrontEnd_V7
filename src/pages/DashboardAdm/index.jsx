@@ -114,6 +114,8 @@ const DashboardAdm = () => {
   const [superSearch, setSuperSearch] = useState('');
   const [superOpen,   setSuperOpen]   = useState(false);
   const [metricFilter, setMetricFilter] = useState('');
+  const [importHistory, setImportHistory] = useState([]);
+  const [exportImportId, setExportImportId] = useState('');
 
   useEffect(() => {
     if (!fcaStorage.get('token') || !['admin', 'consulta'].includes(role)) navigate('/login/GH');
@@ -130,6 +132,10 @@ const DashboardAdm = () => {
   const loadUsers     = useCallback(async () => { try { setUsers(await fcaFetch('/fca/users')); } catch (e) { toast.error(e.message); } }, []);
   const loadRequests  = useCallback(async () => { try { setRequests(await fcaFetch('/fca/link-requests')); } catch (e) { toast.error(e.message); } }, []);
   const loadHierarchy = useCallback(async () => { try { setHierarchy(await fcaFetch('/fca/hierarchy/full-tree')); } catch (e) { toast.error(e.message); } }, []);
+  const loadImports   = useCallback(async () => {
+    if (isReadOnly) { setImportHistory([]); return; }
+    try { setImportHistory(await fcaFetch('/fca/users/imports')); } catch (e) { toast.error(e.message); }
+  }, [isReadOnly]);
   const loadWindow   = useCallback(async () => {
     try {
       const d = await fcaFetch('/fca/window');
@@ -139,8 +145,8 @@ const DashboardAdm = () => {
   }, []);
 
   useEffect(() => {
-    loadDashboard(); loadUsers(); loadRequests(); loadHierarchy(); loadWindow();
-  }, [loadDashboard, loadUsers, loadRequests, loadHierarchy, loadWindow]);
+    loadDashboard(); loadUsers(); loadRequests(); loadHierarchy(); loadImports(); loadWindow();
+  }, [loadDashboard, loadUsers, loadRequests, loadHierarchy, loadImports, loadWindow]);
 
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
@@ -196,9 +202,10 @@ const DashboardAdm = () => {
   const exportCsv = async () => {
     if (isReadOnly) return;
     try {
-      const blob = await fcaFetch('/fca/users/export-csv');
+      const qs = exportImportId ? `?import_id=${encodeURIComponent(exportImportId)}` : '';
+      const blob = await fcaFetch(`/fca/users/export-csv${qs}`);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `usuarios_fca_hierarquia_${Date.now()}.csv`; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = `usuarios_gh_hierarquia_${Date.now()}.csv`; a.click();
       URL.revokeObjectURL(url);
     } catch (err) { toast.error(err.message); }
   };
@@ -217,7 +224,7 @@ const DashboardAdm = () => {
         toast.success(data.message);
       }
       if (data.errors?.length) console.warn('Import errors:', data.errors);
-      loadUsers(); loadHierarchy();
+      loadUsers(); loadHierarchy(); loadImports();
     } catch (err) { toast.error(err.message); }
     e.target.value = '';
   };
@@ -229,17 +236,6 @@ const DashboardAdm = () => {
       await fcaFetch(`/fca/link-requests/${id}/${action}`, { method: 'PUT', body: JSON.stringify({ note: action === 'approve' ? 'Aprovado.' : 'Reprovado.' }) });
       toast.success(action === 'approve' ? 'Vínculo aprovado.' : 'Reprovado.');
       loadRequests(); loadUsers();
-    } catch (err) { toast.error(err.message); }
-  };
-
-  // ── Clear imported ──
-  const clearBase = async () => {
-    if (isReadOnly) return;
-    if (!window.confirm('Isso vai remover técnicos, supervisores e coordenadores. Admins e consultas não serão removidos. Confirma?')) return;
-    try {
-      const data = await fcaFetch('/fca/users/clear-imported', { method: 'DELETE' });
-      toast.success(data.message);
-      loadUsers(); loadDashboard(); loadHierarchy();
     } catch (err) { toast.error(err.message); }
   };
 
@@ -357,6 +353,19 @@ const DashboardAdm = () => {
                     {!isReadOnly && (
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <Btn onClick={openCreate}>+ Adicionar</Btn>
+                        <Sel
+                          value={exportImportId}
+                          onChange={(e) => setExportImportId(e.target.value)}
+                          style={{ width: 240, minHeight: 36 }}
+                          title="Periodo da extracao"
+                        >
+                          <option value="">Base atual</option>
+                          {importHistory.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {(item.label || 'Importacao')}{item.created_at ? ` - ${new Date(item.created_at).toLocaleDateString('pt-BR')}` : ''}
+                            </option>
+                          ))}
+                        </Sel>
                         <Btn $v="ghost" onClick={exportCsv}>↓ Exportar CSV</Btn>
                         <label style={{ cursor: 'pointer' }}>
                           <Btn $v="ghost" as="span">↑ Importar CSV</Btn>
@@ -527,16 +536,6 @@ const DashboardAdm = () => {
                   </form>
                 </Card>
 
-                {!isReadOnly && (
-                  <Card style={{ maxWidth: 500, marginTop: '1.2rem', borderColor: 'rgba(157,41,38,0.30)' }}>
-                    <CardLabel style={{ color: '#9d2926' }}>Zona de Perigo</CardLabel>
-                    <p style={{ fontSize: '0.82rem', color: '#9a948f', margin: '0.6rem 0 1rem', lineHeight: 1.5 }}>
-                      Remove todos os técnicos, supervisores e coordenadores importados. Admins e consultas não são afetados.
-                      Use antes de reimportar uma base corrigida.
-                    </p>
-                    <Btn $v="danger" type="button" onClick={clearBase}>🗑 Limpar Base Importada</Btn>
-                  </Card>
-                )}
               </>
             )}
           </ContentArea>

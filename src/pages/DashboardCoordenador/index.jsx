@@ -108,15 +108,6 @@ const DashboardCoordenador = () => {
     setLoading(false);
   };
 
-  const handleUnlink = async (childId) => {
-    if (!window.confirm('Remover vínculo?')) return;
-    try {
-      await fcaFetch(`/fca/hierarchy/unlink/${childId}`, { method: 'DELETE' });
-      toast.success('Vínculo removido.');
-      loadData();
-    } catch (err) { toast.error(err.message); }
-  };
-
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
   return (
@@ -186,7 +177,7 @@ const DashboardCoordenador = () => {
                       <thead>
                         <tr>
                           <th>Nome</th><th>Matrícula</th><th>Regional</th>
-                          <th>Empresa</th><th>Técnicos</th><th>Ação</th>
+                          <th>Empresa</th><th>Técnicos</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -210,14 +201,11 @@ const DashboardCoordenador = () => {
                                 {u.subordinates?.length || 0} técnico{(u.subordinates?.length || 0) !== 1 ? 's' : ''}
                               </span>
                             </td>
-                            <td>
-                              <Btn $v="danger" className="sm" onClick={() => handleUnlink(u.id)}>Desvincular</Btn>
-                            </td>
                           </tr>
                         ))}
                         {subordinates.length === 0 && (
                           <tr>
-                            <td colSpan={6}>
+                            <td colSpan={5}>
                               <Empty><div className="icon">👥</div>Nenhum supervisor vinculado ainda.</Empty>
                             </td>
                           </tr>

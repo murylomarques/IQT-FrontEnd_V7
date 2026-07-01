@@ -5,7 +5,7 @@ import {
   FcaGlobal, FcaWrap, Topbar, BrandRow, BrandLogo, BrandMeta, SessionPill,
   Shell, AppLayout, SideNav, NavBtn, ContentArea,
   PageTitle, Card, CardRow, CardLabel, Inp, Btn,
-  TblWrap, Tbl, RBadge, WinBadge, MetricsRow, Metric, Empty,
+  TblWrap, Tbl, WinBadge, MetricsRow, Metric, Empty,
 } from '../FCA/theme';
 import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
 
@@ -89,15 +89,6 @@ const DashboardSupervisor = () => {
     setLoading(false);
   };
 
-  const handleUnlink = async (childId) => {
-    if (!window.confirm('Remover vínculo?')) return;
-    try {
-      await fcaFetch(`/fca/hierarchy/unlink/${childId}`, { method: 'DELETE' });
-      toast.success('Vínculo removido.');
-      loadData();
-    } catch (err) { toast.error(err.message); }
-  };
-
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
   return (
@@ -168,7 +159,7 @@ const DashboardSupervisor = () => {
                       <thead>
                         <tr>
                           <th>Nome</th><th>Matrícula</th><th>Regional</th>
-                          <th>Empresa</th><th>Cargo</th><th>Ação</th>
+                          <th>Empresa</th><th>Cargo</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -188,14 +179,11 @@ const DashboardSupervisor = () => {
                               ) : '—'}
                             </td>
                             <td style={{ color: '#9a948f', fontSize: '0.8rem' }}>{u.title || '—'}</td>
-                            <td>
-                              <Btn $v="danger" className="sm" onClick={() => handleUnlink(u.id)}>Desvincular</Btn>
-                            </td>
                           </tr>
                         ))}
                         {subordinates.length === 0 && (
                           <tr>
-                            <td colSpan={6}>
+                            <td colSpan={5}>
                               <Empty><div className="icon">👥</div>Nenhum técnico vinculado ainda.</Empty>
                             </td>
                           </tr>
