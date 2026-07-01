@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -90,6 +90,31 @@ const HierNode = ({ node, depth = 0, search = '' }) => {
   );
 };
 const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', empresa: '', territory: '', regional: '', title: '', manager_id: '', data_admissao: '', data_demissao: '', observacao: '' };
+
+const monthLabelFromDate = (value) => {
+  if (!value) return '';
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-\d{2}/);
+  if (iso) return `${iso[2]}/${iso[1]}`;
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+};
+
+const currentBaseLabelFromUsers = (users) => {
+  const counts = users.reduce((acc, user) => {
+    if (!['tecnico', 'supervisao', 'coordenacao'].includes(user.role)) return acc;
+    const label = monthLabelFromDate(user.created_at);
+    if (!label) return acc;
+    acc[label] = (acc[label] || 0) + 1;
+    return acc;
+  }, {});
+
+  const [label] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || [];
+  return label ? `Base ${label}` : 'Base vigente';
+};
 
 const DashboardAdm = () => {
   const navigate = useNavigate();
@@ -251,6 +276,7 @@ const DashboardAdm = () => {
   const pending  = requests.filter((r) => r.status === 'pending');
   const selectedSuperior = users.find((u) => String(u.id) === String(userForm.manager_id));
   const filteredSupers   = users.filter((u) => !superSearch || u.name.toLowerCase().includes(superSearch.toLowerCase()));
+  const currentBaseLabel = useMemo(() => currentBaseLabelFromUsers(users), [users]);
   const dashboardRows = visUsers.filter((u) => {
     if (!metricFilter) return true;
     if (metricFilter === 'nao_vinculados') {
@@ -359,7 +385,7 @@ const DashboardAdm = () => {
                           style={{ width: 240, minHeight: 36 }}
                           title="Periodo da extracao"
                         >
-                          <option value="">Base atual</option>
+                          <option value="">{currentBaseLabel}</option>
                           {importHistory.map((item) => (
                             <option key={item.id} value={item.id}>
                               {(item.label || 'Importacao')}{item.created_at ? ` - ${new Date(item.created_at).toLocaleDateString('pt-BR')}` : ''}
