@@ -103,6 +103,24 @@ const monthLabelFromDate = (value) => {
   return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 };
 
+const monthLabelFromText = (value) => {
+  const match = String(value || '').match(/\b(\d{1,2})[/-](\d{2,4})\b/);
+  if (!match) return '';
+
+  const month = Number(match[1]);
+  let year = Number(match[2]);
+  if (year < 100) year += 2000;
+
+  if (month < 1 || month > 12 || !year) return '';
+
+  return `${String(month).padStart(2, '0')}/${year}`;
+};
+
+const currentMonthLabel = () => {
+  const now = new Date();
+  return `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+};
+
 const currentBaseLabelFromUsers = (users) => {
   const counts = users.reduce((acc, user) => {
     if (!['tecnico', 'supervisao', 'coordenacao'].includes(user.role)) return acc;
@@ -113,7 +131,15 @@ const currentBaseLabelFromUsers = (users) => {
   }, {});
 
   const [label] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || [];
-  return label ? `Base ${label}` : 'Base vigente';
+  return label ? `Base ${label}` : 'Sem base do mes';
+};
+
+const currentBaseLabelFromImports = (imports) => {
+  const active = imports.find((item) => item.is_active);
+  if (!active) return '';
+
+  const label = monthLabelFromText(active.label);
+  return label && label === currentMonthLabel() ? `Base ${label}` : 'Sem base do mes';
 };
 
 const DashboardAdm = () => {
@@ -249,7 +275,7 @@ const DashboardAdm = () => {
         toast.success(data.message);
       }
       if (data.errors?.length) console.warn('Import errors:', data.errors);
-      loadUsers(); loadHierarchy(); loadImports();
+      loadUsers(); loadDashboard(); loadHierarchy(); loadImports();
     } catch (err) { toast.error(err.message); }
     e.target.value = '';
   };
@@ -276,7 +302,10 @@ const DashboardAdm = () => {
   const pending  = requests.filter((r) => r.status === 'pending');
   const selectedSuperior = users.find((u) => String(u.id) === String(userForm.manager_id));
   const filteredSupers   = users.filter((u) => !superSearch || u.name.toLowerCase().includes(superSearch.toLowerCase()));
-  const currentBaseLabel = useMemo(() => currentBaseLabelFromUsers(users), [users]);
+  const currentBaseLabel = useMemo(
+    () => currentBaseLabelFromImports(importHistory) || currentBaseLabelFromUsers(users),
+    [importHistory, users]
+  );
   const dashboardRows = visUsers.filter((u) => {
     if (!metricFilter) return true;
     if (metricFilter === 'nao_vinculados') {
