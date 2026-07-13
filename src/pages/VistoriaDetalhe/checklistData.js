@@ -19,6 +19,7 @@ export const vistoriaCompletaQuestions = [
   { key: 'poste_passagem_equipado', label: 'Poste de passagem equipado' },
   { key: 'esticadores_corretos', label: 'Esticadores instalados e utilizados da forma correta' },
   { key: 'equipagem_poste_cliente', label: 'Equipagem do poste do cliente (PTR)' },
+  { key: 'tecnico_deixou_local_limpo_externo', label: 'Técnico deixou o local limpo (parte externa)' },
 
   // INTERNA / COMPLETA
   { key: 'equipagem_fachada_cliente', label: 'Equipagem da fachada do cliente' },
@@ -57,6 +58,7 @@ export const vistoriaExternaQuestions = [
   { key: 'meia_lua_drop', label: 'Meia lua do drop' },
   { key: 'esticadores_corretos', label: 'Esticadores instalados e utilizados da forma correta' },
   { key: 'equipagem_poste_cliente', label: 'Equipagem do poste do cliente (PTR)' },
+  { key: 'tecnico_deixou_local_limpo_externo', label: 'Técnico deixou o local limpo (parte externa)' },
 
  
 ];

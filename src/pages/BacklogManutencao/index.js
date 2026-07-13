@@ -3,7 +3,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Menu from '../../components/Menu';
 import { jsPDF } from 'jspdf';
-import { manutencaoQuestionLabels } from '../VistoriaManutencaoDetalhe/checklistData';
+import {
+  isVisibleMaintenanceChecklistItem,
+  manutencaoQuestionLabels,
+} from '../VistoriaManutencaoDetalhe/checklistData';
 import {
   FiUser,
   FiBriefcase,
@@ -196,7 +199,7 @@ const BacklogManutencao = () => {
     doc.text('Checklist', 14, y);
     y += 8;
 
-    (vistoria.checklist_itens || []).forEach((item, index) => {
+    (vistoria.checklist_itens || []).filter(isVisibleMaintenanceChecklistItem).forEach((item, index) => {
       if (y > 270) {
         doc.addPage();
         y = 18;

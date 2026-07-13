@@ -44,6 +44,18 @@ const normalizeAnswer = (value = '') =>
     .toLowerCase()
     .trim();
 
+const genericMotivoValues = new Set(['manutencao', 'ativacao']);
+
+const getMotivoVistoria = (info) => {
+  const candidates = [info?.motivo_vistoria, info?.tipo_trabalho];
+  const motivo = candidates.find(value => {
+    const normalized = normalizeAnswer(value || '');
+    return normalized && !genericMotivoValues.has(normalized);
+  });
+
+  return motivo || 'N/A';
+};
+
 const isQuestionIssue = (question, value) => {
   const status = normalizeAnswer(value?.status);
   if (!status) return false;
@@ -291,7 +303,7 @@ const VistoriaManutencaoDetalhe = () => {
   }
 
   const sa = vistoriaInfo.numero_compromisso || vistoriaInfo.caso || 'N/A';
-  const motivo = vistoriaInfo.motivo_vistoria || vistoriaInfo.tipo_trabalho || vistoriaInfo.tipo_servico || 'Manutenção';
+  const motivo = getMotivoVistoria(vistoriaInfo);
 
   return (
     <VistoriaContainer>

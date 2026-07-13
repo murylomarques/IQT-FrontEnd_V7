@@ -121,21 +121,23 @@ export const manutencaoQuestionLabels = [
 ].reduce((acc, question) => {
   acc[question.key] = question.label;
   return acc;
-}, {
-  retorno_tecnico: 'É necessário o retorno do técnico?',
-});
+}, {});
+
+export const hiddenManutencaoChecklistKeys = ['retorno_tecnico'];
+
+export const isVisibleMaintenanceChecklistItem = (item) => (
+  item && !hiddenManutencaoChecklistKeys.includes(item.item_key)
+);
 
 export const isMaintenanceIssue = (item) => {
   if (!item) return false;
+  if (!isVisibleMaintenanceChecklistItem(item)) return false;
   if (item.status === 'Não Conforme' || item.status === 'Nao Conforme') return true;
   if (['riscos_qualidade_interrupcao', 'emenda_cabo_drop'].includes(item.item_key)) {
     return item.status === 'Sim';
   }
   if (item.item_key === 'cliente_satisfeito_atendimento') {
     return item.status === 'Não' || item.status === 'Nao';
-  }
-  if (item.item_key === 'retorno_tecnico') {
-    return item.status === 'Sim';
   }
   return false;
 };

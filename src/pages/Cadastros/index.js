@@ -12,7 +12,10 @@ import { FiDownload, FiFile, FiSearch, FiPrinter, FiXCircle, FiCalendar, FiEye, 
 // --- Templates de PDF ---
 import VistoriaPdfTemplate from '../../components/VistoriaPdfTemplate';
 import VistoriaSegurancaPdfTemplate from '../../components/VistoriaSegurancaPdfTemplate';
-import { manutencaoQuestionLabels } from '../VistoriaManutencaoDetalhe/checklistData';
+import {
+  isVisibleMaintenanceChecklistItem,
+  manutencaoQuestionLabels,
+} from '../VistoriaManutencaoDetalhe/checklistData';
 
 // --- Estilos ---
 import { LayoutContainer, ContentArea, Header, HeaderTitle, UserProfile } from '../Dashboard/styles';
@@ -347,7 +350,7 @@ const Cadastros = () => {
     pdf.text('Checklist', 40, y);
     y += 16;
 
-    (vistoria.checklist_itens || []).forEach((item, index) => {
+    (vistoria.checklist_itens || []).filter(isVisibleMaintenanceChecklistItem).forEach((item, index) => {
       if (y > 760) {
         pdf.addPage();
         y = 42;

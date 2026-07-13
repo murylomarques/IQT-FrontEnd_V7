@@ -1,8 +1,30 @@
 import { jsPDF } from 'jspdf';
 import { FiDownload } from 'react-icons/fi';
-import { manutencaoQuestionLabels } from '../VistoriaManutencaoDetalhe/checklistData';
+import {
+  isVisibleMaintenanceChecklistItem,
+  manutencaoQuestionLabels,
+} from '../VistoriaManutencaoDetalhe/checklistData';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
+
+const genericMotivoValues = new Set(['manutencao', 'ativacao']);
+
+const normalizeText = (value = '') =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const getMotivoVistoria = (agenda) => {
+  const candidates = [agenda?.motivo_vistoria, agenda?.tipo_trabalho];
+  const motivo = candidates.find(value => {
+    const normalized = normalizeText(value || '');
+    return normalized && !genericMotivoValues.has(normalized);
+  });
+
+  return motivo || 'N/A';
+};
 
 const carregarImagemBase64 = (url) =>
   new Promise((resolve, reject) => {
@@ -48,7 +70,7 @@ export default function GerarPDFManutencao({ vistoria }) {
     doc.text(`Técnico: ${vistoria.agenda?.nome_tecnico || 'N/A'}`, 14, 104);
     doc.text(`Empresa: ${vistoria.agenda?.empresa_tecnico || 'N/A'}`, 14, 111);
     doc.text(`Regional: ${vistoria.agenda?.regional || 'N/A'} / ${vistoria.agenda?.city || 'N/A'}`, 14, 118);
-    doc.text(`Motivo: ${vistoria.agenda?.motivo_vistoria || vistoria.agenda?.tipo_trabalho || 'N/A'}`, 14, 125);
+    doc.text(`Motivo: ${getMotivoVistoria(vistoria.agenda)}`, 14, 125);
 
     if (vistoria.observacoes_gerais) {
       const obsLines = doc.splitTextToSize(`Observações: ${vistoria.observacoes_gerais}`, 180);
@@ -61,7 +83,7 @@ export default function GerarPDFManutencao({ vistoria }) {
 
     let y = 157;
 
-    for (const item of (vistoria.checklist_itens || [])) {
+    for (const item of (vistoria.checklist_itens || []).filter(isVisibleMaintenanceChecklistItem)) {
       if (y > 265) { doc.addPage(); y = 20; }
 
       const label = manutencaoQuestionLabels[item.item_key] || item.item_key.replace(/_/g, ' ');
