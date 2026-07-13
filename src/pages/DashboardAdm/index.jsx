@@ -61,6 +61,10 @@ const DashboardAdm = () => {
   const [importHistory, setImportHistory] = useState([]);
   const [exportImportId, setExportImportId] = useState('');
   const [importRows, setImportRows] = useState([]);
+  const [importMonth, setImportMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   useEffect(() => {
     if (!fcaStorage.get('token') || !['admin', 'consulta'].includes(role)) navigate('/login/GH');
@@ -167,6 +171,8 @@ const DashboardAdm = () => {
     if (isReadOnly || viewingHistory) return;
     const file = e.target.files?.[0]; if (!file) return;
     const form = new FormData(); form.append('file', file);
+    const [importYear, importMonthNum] = importMonth.split('-');
+    if (importYear && importMonthNum) form.append('label', `${importMonthNum}/${importYear}`);
     try {
       const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br'}/api/fca/users/import-csv`, { method: 'POST', headers: { Authorization: `Bearer ${fcaStorage.get('token')}` }, body: form });
       const data = await res.json();
@@ -331,6 +337,14 @@ const DashboardAdm = () => {
                           ))}
                         </Sel>
                         <Btn $v="ghost" onClick={() => exportCsv(exportImportId)}>↓ Exportar CSV</Btn>
+                        <Inp
+                          type="month"
+                          value={importMonth}
+                          onChange={(e) => setImportMonth(e.target.value)}
+                          disabled={viewingHistory}
+                          title="Mês que esta importação representa"
+                          style={{ width: 150 }}
+                        />
                         <label style={{ cursor: viewingHistory ? 'not-allowed' : 'pointer' }}>
                           <Btn $v="ghost" as="span" style={{ opacity: viewingHistory ? 0.5 : 1 }}>↑ Importar CSV</Btn>
                           <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCsv} disabled={viewingHistory} />
