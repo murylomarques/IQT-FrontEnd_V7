@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -9,138 +9,31 @@ import {
   RBadge, SPill, Overlay, ModalBox, WinBadge, Empty, Alert,
 } from '../FCA/theme';
 import { fcaStorage, fcaFetch, ROLE_LABELS } from '../FCA/api';
+import { HierNode, hierMatchNode } from '../FCA/HierarchyTree';
 
-const TABS = ['Dashboard', 'Usuários', 'Hierarquia', 'Vínculos', 'Configurações'];
+const TABS = ['Dashboard', 'Usuários', 'Histórico', 'Hierarquia', 'Vínculos', 'Configurações'];
 
-// ── Hierarchy helpers ─────────────────────────────────────────────────────────
-const hierMatchStr = (node, q) =>
-  !q ||
-  (node.name        || '').toLowerCase().includes(q.toLowerCase()) ||
-  (node.employee_id || '').toLowerCase().includes(q.toLowerCase()) ||
-  (node.cpf         || '').toLowerCase().includes(q.toLowerCase());
-
-const hierMatchNode = (node, q) =>
-  hierMatchStr(node, q) ||
-  (node.subordinates || []).some((s) =>
-    hierMatchStr(s, q) || (s.subordinates || []).some((t) => hierMatchStr(t, q))
-  );
-
-const LEVEL_STYLE = {
-  0: { bg: 'rgba(174,46,42,0.08)', border: 'rgba(174,46,42,0.25)', label: 'Coordenador', labelColor: '#ae2e2a' },
-  1: { bg: 'rgba(212,113,32,0.07)', border: 'rgba(212,113,32,0.22)', label: 'Supervisor', labelColor: '#d47120' },
-  2: { bg: 'rgba(53,48,45,0.04)', border: 'rgba(53,48,45,0.12)', label: 'Técnico', labelColor: '#5a5551' },
+const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const monthNameFromLabel = (label) => {
+  const m = String(label || '').match(/^(\d{1,2})\/(\d{4})$/);
+  if (!m) return label || 'Importação';
+  const monthName = MONTH_NAMES[Number(m[1]) - 1];
+  return monthName ? `${monthName} de ${m[2]}` : label;
 };
-
-const HierNode = ({ node, depth = 0, search = '' }) => {
-  const s = LEVEL_STYLE[depth] || LEVEL_STYLE[2];
-  const subs = node.subordinates || [];
-  const visibleSubs = search
-    ? subs.filter((sub) =>
-        hierMatchStr(sub, search) || (sub.subordinates || []).some((t) => hierMatchStr(t, search))
-      )
-    : subs;
-
-  return (
-    <div style={{
-      background: s.bg,
-      border: `1px solid ${s.border}`,
-      borderRadius: 10,
-      padding: depth === 0 ? '1rem 1.1rem' : depth === 1 ? '0.75rem 1rem' : '0.55rem 0.9rem',
-      marginLeft: depth * 20,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-        <span style={{
-          fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em',
-          textTransform: 'uppercase', color: s.labelColor,
-          background: 'rgba(255,255,255,0.7)', borderRadius: 4,
-          padding: '2px 7px', border: `1px solid ${s.border}`,
-        }}>
-          {s.label}
-        </span>
-        <span style={{ fontWeight: depth === 0 ? 700 : depth === 1 ? 600 : 500, fontSize: depth === 0 ? '0.97rem' : '0.88rem' }}>
-          {node.name}
-        </span>
-        {node.employee_id && (
-          <span style={{ fontSize: '0.76rem', color: '#9a948f', background: 'rgba(255,255,255,0.6)', borderRadius: 4, padding: '1px 6px' }}>
-            Mat: <strong>{node.employee_id}</strong>
-          </span>
-        )}
-        {node.cpf && (
-          <span style={{ fontSize: '0.76rem', color: '#9a948f', background: 'rgba(255,255,255,0.6)', borderRadius: 4, padding: '1px 6px' }}>
-            CPF: <strong>{node.cpf}</strong>
-          </span>
-        )}
-        {node.empresa && (
-          <span style={{ fontSize: '0.74rem', color: '#5a5551', background: 'rgba(255,255,255,0.75)', borderRadius: 4, padding: '1px 7px', fontStyle: 'italic' }}>
-            {node.empresa}
-          </span>
-        )}
-        {node.regional && (
-          <span style={{ fontSize: '0.72rem', color: '#9a948f', marginLeft: 'auto' }}>{node.regional}</span>
-        )}
-      </div>
-      {visibleSubs.length > 0 && (
-        <div style={{ marginTop: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-          {visibleSubs.map((sub) => (
-            <HierNode key={sub.id} node={sub} depth={depth + 1} search={search} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+const monthNameFromDate = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '';
+  return monthNameFromLabel(`${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`);
 };
-const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', empresa: '', territory: '', regional: '', title: '', manager_id: '', data_admissao: '', data_demissao: '', observacao: '' };
-
-const monthLabelFromDate = (value) => {
-  if (!value) return '';
-  const raw = String(value).trim();
-  const iso = raw.match(/^(\d{4})-(\d{2})-\d{2}/);
-  if (iso) return `${iso[2]}/${iso[1]}`;
-
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return '';
-
-  return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-};
-
-const monthLabelFromText = (value) => {
-  const match = String(value || '').match(/\b(\d{1,2})[/-](\d{2,4})\b/);
-  if (!match) return '';
-
-  const month = Number(match[1]);
-  let year = Number(match[2]);
-  if (year < 100) year += 2000;
-
-  if (month < 1 || month > 12 || !year) return '';
-
-  return `${String(month).padStart(2, '0')}/${year}`;
-};
-
-const currentMonthLabel = () => {
+const isExpiredPending = (r) => {
+  if (r.status !== 'pending' || !r.requested_at) return false;
+  const d = new Date(r.requested_at);
   const now = new Date();
-  return `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+  return d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear();
 };
 
-const currentBaseLabelFromUsers = (users) => {
-  const counts = users.reduce((acc, user) => {
-    if (!['tecnico', 'supervisao', 'coordenacao'].includes(user.role)) return acc;
-    const label = monthLabelFromDate(user.created_at);
-    if (!label) return acc;
-    acc[label] = (acc[label] || 0) + 1;
-    return acc;
-  }, {});
-
-  const [label] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || [];
-  return label ? `Base ${label}` : 'Sem base do mes';
-};
-
-const currentBaseLabelFromImports = (imports) => {
-  const active = imports.find((item) => item.is_active);
-  if (!active) return '';
-
-  const label = monthLabelFromText(active.label);
-  return label && label === currentMonthLabel() ? `Base ${label}` : 'Sem base do mes';
-};
+const EMPTY = { name: '', usuario: '', email: '', password: '', role: 'consulta', employee_id: '', cpf: '', empresa: '', territory: '', regional: '', title: '', manager_id: '', data_admissao: '', data_demissao: '', observacao: '' };
 
 const DashboardAdm = () => {
   const navigate = useNavigate();
@@ -167,6 +60,7 @@ const DashboardAdm = () => {
   const [metricFilter, setMetricFilter] = useState('');
   const [importHistory, setImportHistory] = useState([]);
   const [exportImportId, setExportImportId] = useState('');
+  const [importRows, setImportRows] = useState([]);
 
   useEffect(() => {
     if (!fcaStorage.get('token') || !['admin', 'consulta'].includes(role)) navigate('/login/GH');
@@ -199,11 +93,19 @@ const DashboardAdm = () => {
     loadDashboard(); loadUsers(); loadRequests(); loadHierarchy(); loadImports(); loadWindow();
   }, [loadDashboard, loadUsers, loadRequests, loadHierarchy, loadImports, loadWindow]);
 
+  useEffect(() => {
+    if (!exportImportId) { setImportRows([]); return; }
+    (async () => {
+      try { setImportRows(await fcaFetch(`/fca/users/imports/${exportImportId}/rows`)); }
+      catch (e) { toast.error(e.message); setImportRows([]); }
+    })();
+  }, [exportImportId]);
+
   const logout = () => { fcaStorage.clear(); navigate('/login/GH'); };
 
   // ── User CRUD ──
   const openCreate = () => {
-    if (isReadOnly) return;
+    if (isReadOnly || viewingHistory) return;
     setEditUser(null); setUserForm(EMPTY); setSuperSearch(''); setSuperOpen(false); setModalOpen(true);
   };
   const openEdit   = (u) => {
@@ -250,10 +152,10 @@ const DashboardAdm = () => {
   };
 
   // ── CSV ──
-  const exportCsv = async () => {
+  const exportCsv = async (importId = '') => {
     if (isReadOnly) return;
     try {
-      const qs = exportImportId ? `?import_id=${encodeURIComponent(exportImportId)}` : '';
+      const qs = importId ? `?import_id=${encodeURIComponent(importId)}` : '';
       const blob = await fcaFetch(`/fca/users/export-csv${qs}`);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `usuarios_gh_hierarquia_${Date.now()}.csv`; a.click();
@@ -262,7 +164,7 @@ const DashboardAdm = () => {
   };
 
   const importCsv = async (e) => {
-    if (isReadOnly) return;
+    if (isReadOnly || viewingHistory) return;
     const file = e.target.files?.[0]; if (!file) return;
     const form = new FormData(); form.append('file', file);
     try {
@@ -298,14 +200,14 @@ const DashboardAdm = () => {
     catch (err) { toast.error(err.message); }
   };
 
-  const filtered = users.filter((u) => [u.name, u.usuario, u.email, u.role, u.territory].some((v) => (v || '').toLowerCase().includes(search.toLowerCase())));
+  const visibleTabs = TABS.filter((t) => t !== 'Histórico' || !isReadOnly);
+  const viewingHistory = Boolean(exportImportId);
+  const viewedImport   = importHistory.find((item) => String(item.id) === String(exportImportId));
+  const filtered = (viewingHistory ? importRows : users)
+    .filter((u) => [u.name, u.usuario, u.email, u.role, u.territory].some((v) => (v || '').toLowerCase().includes(search.toLowerCase())));
   const pending  = requests.filter((r) => r.status === 'pending');
   const selectedSuperior = users.find((u) => String(u.id) === String(userForm.manager_id));
   const filteredSupers   = users.filter((u) => !superSearch || u.name.toLowerCase().includes(superSearch.toLowerCase()));
-  const currentBaseLabel = useMemo(
-    () => currentBaseLabelFromImports(importHistory) || currentBaseLabelFromUsers(users),
-    [importHistory, users]
-  );
   const dashboardRows = visUsers.filter((u) => {
     if (!metricFilter) return true;
     if (metricFilter === 'nao_vinculados') {
@@ -339,7 +241,7 @@ const DashboardAdm = () => {
         <AppLayout>
           {/* ── Sidebar ── */}
           <SideNav>
-            {TABS.map((t) => (
+            {visibleTabs.map((t) => (
               <NavBtn key={t} $active={tab === t} onClick={() => setTab(t)}>
                 {t}
                 {t === 'Vínculos' && pending.length > 0 && <NavBadge>{pending.length}</NavBadge>}
@@ -402,29 +304,36 @@ const DashboardAdm = () => {
             {tab === 'Usuários' && (
               <>
                 <PageTitle>Gestão de <em>Usuários</em></PageTitle>
+                {viewingHistory && (
+                  <Alert $t="warn">
+                    📦 Visualizando snapshot de <strong>{viewedImport?.label || 'importação'}</strong>
+                    {viewedImport?.created_at ? ` (${new Date(viewedImport.created_at).toLocaleDateString('pt-BR')})` : ''} — somente leitura.
+                    Volte para "Base atual" para editar usuários.
+                  </Alert>
+                )}
                 <Card>
                   <CardRow>
                     <Inp style={{ maxWidth: 280, borderRadius: '999px' }} placeholder="🔍  Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
                     {!isReadOnly && (
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <Btn onClick={openCreate}>+ Adicionar</Btn>
+                        <Btn onClick={openCreate} disabled={viewingHistory}>+ Adicionar</Btn>
                         <Sel
                           value={exportImportId}
                           onChange={(e) => setExportImportId(e.target.value)}
                           style={{ width: 240, minHeight: 36 }}
-                          title="Periodo da extracao"
+                          title="Base a visualizar / exportar"
                         >
-                          <option value="">{currentBaseLabel}</option>
+                          <option value="">Base atual (ao vivo)</option>
                           {importHistory.map((item) => (
                             <option key={item.id} value={item.id}>
-                              {(item.label || 'Importacao')}{item.created_at ? ` - ${new Date(item.created_at).toLocaleDateString('pt-BR')}` : ''}
+                              {monthNameFromLabel(item.label)}
                             </option>
                           ))}
                         </Sel>
-                        <Btn $v="ghost" onClick={exportCsv}>↓ Exportar CSV</Btn>
-                        <label style={{ cursor: 'pointer' }}>
-                          <Btn $v="ghost" as="span">↑ Importar CSV</Btn>
-                          <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCsv} />
+                        <Btn $v="ghost" onClick={() => exportCsv(exportImportId)}>↓ Exportar CSV</Btn>
+                        <label style={{ cursor: viewingHistory ? 'not-allowed' : 'pointer' }}>
+                          <Btn $v="ghost" as="span" style={{ opacity: viewingHistory ? 0.5 : 1 }}>↑ Importar CSV</Btn>
+                          <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCsv} disabled={viewingHistory} />
                         </label>
                       </div>
                     )}
@@ -434,7 +343,7 @@ const DashboardAdm = () => {
                       <thead>
                         <tr>
                           <th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Território</th><th>Superior</th><th>Admissão</th><th>Demissão</th><th>Observação</th>
-                          {!isReadOnly && <th>Ações</th>}
+                          {!isReadOnly && !viewingHistory && <th>Ações</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -449,7 +358,7 @@ const DashboardAdm = () => {
                             <td style={{ color: '#9a948f', whiteSpace: 'nowrap' }}>{u.data_admissao ? new Date(u.data_admissao + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
                             <td style={{ color: u.data_demissao ? '#ae2e2a' : '#9a948f', whiteSpace: 'nowrap', fontWeight: u.data_demissao ? 600 : 400 }}>{u.data_demissao ? new Date(u.data_demissao + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
                             <td style={{ color: '#9a948f', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.observacao || ''}>{u.observacao || '—'}</td>
-                            {!isReadOnly && (
+                            {!isReadOnly && !viewingHistory && (
                               <td>
                                 <div style={{ display: 'flex', gap: 6 }}>
                                   <Btn $v="ghost" className="sm" onClick={() => openEdit(u)}>Editar</Btn>
@@ -460,7 +369,44 @@ const DashboardAdm = () => {
                           </tr>
                         ))}
                         {filtered.length === 0 && (
-                          <tr><td colSpan={isReadOnly ? 9 : 10}><Empty><div className="icon">🔍</div>Nenhum resultado encontrado.</Empty></td></tr>
+                          <tr><td colSpan={isReadOnly || viewingHistory ? 9 : 10}><Empty><div className="icon">🔍</div>Nenhum resultado encontrado.</Empty></td></tr>
+                        )}
+                      </tbody>
+                    </Tbl>
+                  </TblWrap>
+                </Card>
+              </>
+            )}
+
+            {/* HISTÓRICO */}
+            {tab === 'Histórico' && !isReadOnly && (
+              <>
+                <PageTitle>Histórico de <em>Bases</em></PageTitle>
+                <Card>
+                  <CardRow>
+                    <CardLabel>Bases mensais importadas ({importHistory.length})</CardLabel>
+                    <Btn onClick={() => exportCsv('')}>↓ Exportar tudo</Btn>
+                  </CardRow>
+                  <TblWrap style={{ marginTop: '0.8rem' }}>
+                    <Tbl>
+                      <thead>
+                        <tr>
+                          <th>Mês</th><th>Registros</th><th>Enviado por</th><th>Data</th><th>Arquivo</th><th>Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importHistory.map((item) => (
+                          <tr key={item.id}>
+                            <td><strong>{monthNameFromLabel(item.label)}</strong></td>
+                            <td>{item.rows_count}</td>
+                            <td style={{ color: '#9a948f' }}>{item.uploaded_by_name || '—'}</td>
+                            <td style={{ color: '#9a948f', fontSize: '0.8rem' }}>{item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '—'}</td>
+                            <td style={{ color: '#9a948f', fontSize: '0.8rem' }}>{item.source_filename || '—'}</td>
+                            <td><Btn $v="ghost" className="sm" onClick={() => exportCsv(item.id)}>Exportar</Btn></td>
+                          </tr>
+                        ))}
+                        {importHistory.length === 0 && (
+                          <tr><td colSpan={6}><Empty><div className="icon">🗂️</div>Nenhuma base importada ainda.</Empty></td></tr>
                         )}
                       </tbody>
                     </Tbl>
@@ -517,7 +463,7 @@ const DashboardAdm = () => {
                     <Tbl>
                       <thead>
                         <tr>
-                          <th>#</th><th>Solicitante</th><th>Superior</th><th>Colaborador</th><th>Data</th><th>Status</th>
+                          <th>#</th><th>Solicitante</th><th>Superior</th><th>Colaborador</th><th>Mês</th><th>Data</th><th>Status</th>
                           {!isReadOnly && <th>Ação</th>}
                         </tr>
                       </thead>
@@ -534,22 +480,26 @@ const DashboardAdm = () => {
                               <strong>{r.child?.name || '—'}</strong>
                               <RBadge $r={r.child_role} style={{ marginLeft: 4 }}>{r.child_role}</RBadge>
                             </td>
+                            <td style={{ fontSize: '0.78rem', color: '#9a948f' }}>{monthNameFromDate(r.requested_at) || '—'}</td>
                             <td style={{ fontSize: '0.78rem', color: '#9a948f' }}>{r.requested_at ? new Date(r.requested_at).toLocaleDateString('pt-BR') : '—'}</td>
                             <td><SPill $s={r.status}>{r.status}</SPill></td>
                             {!isReadOnly && (
                               <td>
-                                {r.status === 'pending' && (
+                                {r.status === 'pending' && !isExpiredPending(r) && (
                                   <div style={{ display: 'flex', gap: 6 }}>
                                     <Btn $v="success" className="sm" onClick={() => decide(r.id, 'approve')}>Aprovar</Btn>
                                     <Btn $v="danger"  className="sm" onClick={() => decide(r.id, 'reject')}>Reprovar</Btn>
                                   </div>
+                                )}
+                                {isExpiredPending(r) && (
+                                  <span style={{ fontSize: '0.76rem', color: '#9a948f', fontStyle: 'italic' }}>Expirada (mês anterior)</span>
                                 )}
                               </td>
                             )}
                           </tr>
                         ))}
                         {requests.length === 0 && (
-                          <tr><td colSpan={isReadOnly ? 6 : 7}><Empty><div className="icon">✅</div>Nenhuma solicitação pendente.</Empty></td></tr>
+                          <tr><td colSpan={isReadOnly ? 7 : 8}><Empty><div className="icon">✅</div>Nenhuma solicitação pendente.</Empty></td></tr>
                         )}
                       </tbody>
                     </Tbl>

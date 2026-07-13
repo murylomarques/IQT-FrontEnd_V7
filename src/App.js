@@ -34,6 +34,7 @@ import GhLogin from './pages/FCA';
 import DashboardAdm from './pages/DashboardAdm';
 import DashboardSupervisor from './pages/DashboardSupervisor';
 import DashboardCoordenador from './pages/DashboardCoordenador';
+import DashboardGerente from './pages/DashboardGerente';
 import InserirFca from './pages/InserirFca';
 
 // FCA — Avaliação de Campo
@@ -202,6 +203,7 @@ function App() {
             <Route path="/dashboard/gh-adm"        element={<DashboardAdm />} />
             <Route path="/dashboard/gh-supervisor"  element={<DashboardSupervisor />} />
             <Route path="/dashboard/gh-coordenador" element={<DashboardCoordenador />} />
+            <Route path="/dashboard/gh-gerente"     element={<DashboardGerente />} />
             <Route path="/dashboard/gh-viewer"      element={<InserirFca />} />
 
             {/* ── FCA — Avaliação de Campo ── */}

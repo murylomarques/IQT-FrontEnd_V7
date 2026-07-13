@@ -540,6 +540,7 @@ export const Btn = styled.button`
 // ─── Badges ───────────────────────────────────────────────────────────────────
 const roleStyle = {
   admin:       `background:rgba(168,55,44,.16);color:#6c1b0b;`,
+  gerente:     `background:rgba(58,90,168,.16);color:#1f3a75;`,
   coordenacao: `background:rgba(212,113,32,.16);color:#7a3b00;`,
   supervisao:  `background:rgba(220,168,61,.22);color:#6b4e00;`,
   tecnico:     `background:rgba(47,122,63,.16);color:#1a5028;`,

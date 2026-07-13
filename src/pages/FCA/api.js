@@ -32,6 +32,7 @@ export const fcaFetch = async (path, options = {}) => {
 
 export const ROLE_LABELS = {
   admin:       'Administrador',
+  gerente:     'Gerente',
   coordenacao: 'Coordenação',
   supervisao:  'Supervisão',
   tecnico:     'Técnico',
@@ -41,6 +42,7 @@ export const ROLE_LABELS = {
 export const getRedirectByRole = (role = '') => {
   if (role === 'admin')       return '/dashboard/gh-adm';
   if (role === 'consulta')    return '/dashboard/gh-adm';
+  if (role === 'gerente')     return '/dashboard/gh-gerente';
   if (role === 'coordenacao') return '/dashboard/gh-coordenador';
   if (role === 'supervisao')  return '/dashboard/gh-supervisor';
   return '/dashboard/gh-viewer';

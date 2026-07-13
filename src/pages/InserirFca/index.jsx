@@ -20,6 +20,7 @@ const FcaViewer = () => {
   useEffect(() => {
     if (!fcaStorage.get('token')) { navigate('/login/GH'); return; }
     if (role === 'admin')       navigate('/dashboard/gh-adm');
+    if (role === 'gerente')     navigate('/dashboard/gh-gerente');
     if (role === 'coordenacao') navigate('/dashboard/gh-coordenador');
     if (role === 'supervisao')  navigate('/dashboard/gh-supervisor');
   }, [navigate, role]);
