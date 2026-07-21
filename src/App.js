@@ -43,6 +43,7 @@ import DashboardFcaAdmin from './pages/DashboardFcaAdmin';
 import DashboardFcaSupervisor from './pages/DashboardFcaSupervisor';
 import Mensagens from './pages/Mensagens';
 import GlobalNotifier from './components/GlobalNotifier';
+import CampanhaNotaMaxima from './pages/CampanhaNotaMaxima';
 
 const NotFound = () => {
   const { user } = useAuth();
@@ -54,9 +55,13 @@ function App() {
     <ThemeProvider theme={theme}>
       <GlobalStyle />
       <Router>
-        <AuthProvider>
-          <GlobalNotifier />
-          <Routes>
+        <Routes>
+          <Route path="/campanha-nota-maxima" element={<CampanhaNotaMaxima />} />
+          <Route path="/portal/operacao-nota-maxima" element={<CampanhaNotaMaxima />} />
+          <Route path="/*" element={
+            <AuthProvider>
+              <GlobalNotifier />
+              <Routes>
             <Route path="/login" element={<Login />} />
 
             {/* --- ROTAS PÚBLICAS PARA TODOS OS USUÁRIOS LOGADOS --- */}
@@ -216,8 +221,10 @@ function App() {
 
             {/* Rota padrão: logado vai para dashboard, deslogado vai para login */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+              </Routes>
+            </AuthProvider>
+          } />
+        </Routes>
       </Router>
       <ToastContainer
         position="top-right"
