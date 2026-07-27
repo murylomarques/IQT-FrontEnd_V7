@@ -334,6 +334,72 @@
       text-align:center; font-size:13px;
     }
 
+    .legal-notice{
+      margin-top:18px;
+      padding:22px;
+      border-radius:var(--radius);
+      border:1px solid rgba(244,186,68,.62);
+      background:
+        radial-gradient(circle at 100% 0%, rgba(244,186,68,.20), transparent 12rem),
+        linear-gradient(180deg, #fff9ea 0%, #f3ead0 100%);
+      box-shadow:0 14px 38px rgba(83,17,16,.09);
+      color:var(--muted);
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+    }
+    .legal-notice-icon{
+      width:44px;
+      height:44px;
+      flex:0 0 auto;
+      border-radius:15px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(83,17,16,.08);
+      color:var(--primary);
+      font-size:22px;
+      font-weight:900;
+      box-shadow:0 8px 22px rgba(83,17,16,.06);
+    }
+    .legal-notice-copy{
+      min-width:0;
+    }
+    .legal-notice h3{
+      margin:0 0 8px;
+      color:var(--primary);
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:0;
+    }
+    .legal-notice p{
+      margin:0;
+      font-size:14px;
+      line-height:1.72;
+      color:#35302d;
+    }
+    .legal-notice strong{
+      color:var(--text);
+      font-weight:900;
+    }
+    .legal-notice.attention{
+      animation:noticePulse 1s ease-in-out 5;
+    }
+    @keyframes noticePulse{
+      0%, 100%{
+        transform:translateY(0);
+        border-color:rgba(244,186,68,.62);
+        box-shadow:0 14px 38px rgba(83,17,16,.09);
+      }
+      45%{
+        transform:translateY(-3px);
+        border-color:#ae2e2a;
+        box-shadow:
+          0 0 0 4px rgba(174,46,42,.16),
+          0 18px 44px rgba(83,17,16,.18);
+      }
+    }
+
     @media (max-width: 1050px){
       .summary-grid{grid-template-columns:repeat(2, 1fr)}
       .score-card{grid-column:span 2}
@@ -481,6 +547,21 @@
     .prize-status{
       color:#531110;
       background:rgba(255,255,255,.72);
+    }
+
+    .prize-banner.no-prize{
+      border-color:rgba(174,46,42,.28);
+      background:
+        radial-gradient(circle at 90% 20%, rgba(255,255,255,.72), transparent 12rem),
+        linear-gradient(135deg, #fff8e0 0%, #f4df9b 58%, #e4c465 100%);
+      box-shadow:0 16px 38px rgba(83,17,16,.12);
+    }
+
+    .prize-banner.no-prize .prize-copy h3,
+    .prize-banner.no-prize .prize-copy p,
+    .prize-banner.no-prize .prize-status,
+    .prize-banner.no-prize .prize-icon{
+      color:#531110;
     }
 
     .score-card{
@@ -1000,6 +1081,27 @@
       .status-box {
         padding: 20px;
       }
+
+      .legal-notice {
+        padding: 18px;
+        gap: 13px;
+      }
+
+      .legal-notice-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        font-size: 20px;
+      }
+
+      .legal-notice h3 {
+        font-size: 15px;
+      }
+
+      .legal-notice p {
+        font-size: 13px;
+        line-height: 1.65;
+      }
     }
 
     @media (max-width: 380px) {
@@ -1093,10 +1195,10 @@
             </svg>
           </div>
           <div class="prize-copy">
-            <h3>Você está ganhando: <span id="prizeName">—</span></h3>
+            <h3><span id="prizeTitleText">Você está ganhando*: </span><span id="prizeName">—</span></h3>
             <p id="prizeDescription">Premiação conforme colocação atual da parcial.</p>
           </div>
-          <div class="prize-status">Resultado provisório</div>
+          <div id="prizeStatus" class="prize-status">Resultado provisório</div>
         </article>
 
         <div class="summary-grid">
@@ -1200,6 +1302,18 @@
             </div>
           </article>
         </div>
+
+        <article id="legalNotice" class="legal-notice" tabindex="-1" aria-label="Aviso sobre resultado parcial">
+          <div class="legal-notice-icon" aria-hidden="true">!</div>
+          <div class="legal-notice-copy">
+            <h3>* Aviso</h3>
+            <p>
+              * Este resultado é <strong>parcial</strong> e não é definitivo, estando sujeito a revisão.
+              O resultado final será divulgado após o término da campanha, incluindo a apuração de faltas
+              e a aplicação de eventuais medidas disciplinares.
+            </p>
+          </div>
+        </article>
       </section>
 
       <div id="emptyState" class="empty">
@@ -1303,6 +1417,28 @@
       return Math.min(100, n * 100);
     }
 
+    function focusLegalNotice() {
+      const notice = $("legalNotice");
+      if (!notice) return;
+
+      notice.classList.remove("attention");
+      void notice.offsetWidth;
+      notice.classList.add("attention");
+
+      const top = notice.getBoundingClientRect().top + window.scrollY - Math.max(24, window.innerHeight * 0.18);
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      setTimeout(() => {
+        const finalTop = notice.getBoundingClientRect().top + window.scrollY - Math.max(24, window.innerHeight * 0.18);
+        window.scrollTo({ top: Math.max(0, finalTop), behavior: "auto" });
+        try {
+          notice.focus({ preventScroll: true });
+        } catch (error) {
+          notice.focus();
+        }
+      }, 1000);
+    }
+
     function renderParticipant(row) {
       clearMessage();
 
@@ -1351,17 +1487,30 @@
       setText("mixMain", `${formatNumber(row.mix_pct_principal, 2)}%`);
 
       const prizeBanner = $("prizeBanner");
+      const partialDate = formatDate(row.parcial_ate);
+      prizeBanner.classList.toggle("no-prize", !hasPrize);
+      prizeBanner.classList.add("show");
+
       if (hasPrize) {
+        setText("prizeTitleText", "Você está ganhando*: ");
         setText("prizeName", rawPrize);
-        setText("prizeDescription", `Pela colocação registrada na parcial até ${formatDate(row.parcial_ate)}, você está atualmente dentro da faixa de premiação.`);
-        prizeBanner.classList.add("show");
+        setText("prizeDescription", `Pela colocação registrada na parcial até ${partialDate}, você está atualmente dentro da faixa de premiação.`);
+        setText("prizeStatus", "Resultado provisório");
       } else {
-        prizeBanner.classList.remove("show");
+        setText("prizeTitleText", eligible ? "Você ainda não está na faixa de premiação*" : "Você ainda não está elegível para premiação*");
+        setText("prizeName", "");
+        setText(
+          "prizeDescription",
+          eligible
+            ? `Na parcial até ${partialDate}, você ainda não está dentro da faixa de premiação. O resultado é provisório e pode mudar até o fechamento da campanha.`
+            : `Na parcial até ${partialDate}, seu cadastro ainda não atende a todos os critérios de elegibilidade para premiação. O resultado é provisório e pode mudar até o fechamento da campanha.`
+        );
+        setText("prizeStatus", "Resultado provisório");
       }
 
       $("dashboard").classList.add("show");
       $("emptyState").style.display = "none";
-      setTimeout(() => $("dashboard").scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+      setTimeout(focusLegalNotice, 180);
     }
 
     function setSearchLoading(isLoading) {
