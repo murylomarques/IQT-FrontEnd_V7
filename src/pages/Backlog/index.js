@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Menu from '../../components/Menu';
+import { jsPDF } from 'jspdf';
+import { questionsMap } from '../VistoriaDetalhe/checklistData';
 import {
   FiUser,
   FiBriefcase,
@@ -14,6 +16,7 @@ import {
   FiAlertCircle,
   FiBell,
   FiAlertTriangle,
+  FiDownload,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
@@ -31,6 +34,11 @@ import {
   NotificationBell,
   NotificationBadge,
 } from './styles';
+
+const qualityQuestionLabels = Object.values(questionsMap).flat().reduce((acc, question) => {
+  acc[question.key] = question.label;
+  return acc;
+}, {});
 
 const KpiSkeleton = () => (
   <KpiCard>
@@ -167,6 +175,73 @@ const Backlog = () => {
 
   const handleResolverClick = (item) => {
     navigate(`/resolver-qualidade/${item.id}`, { state: { sa: item.protocolo } });
+  };
+
+  const getQualityQuestionLabel = (itemKey) => {
+    if (qualityQuestionLabels[itemKey]) return qualityQuestionLabels[itemKey];
+    const posteMatch = itemKey?.match(/^poste_passagem_equipado_(\d+)$/);
+    if (posteMatch) return `Poste de passagem equipado ${posteMatch[1]}`;
+    return (itemKey || '').replace(/_/g, ' ');
+  };
+
+  const generateQualityPdf = (vistoria) => {
+    const doc = new jsPDF();
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Laudo de Vistoria de Qualidade', 14, 16);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(10);
+    const headerLines = [
+      `ID: ${vistoria.id}`,
+      `Status: ${vistoria.status_laudo || 'N/A'}`,
+      `Tipo: ${vistoria.tipo || 'N/A'}`,
+      `Retorno do tecnico: ${vistoria.retorno_tecnico || 'N/A'}`,
+      `SA: ${vistoria.agenda?.numero_compromisso || 'N/A'}`,
+      `Tecnico: ${vistoria.agenda?.nome_tecnico || 'N/A'}`,
+      `Empresa: ${vistoria.agenda?.empresa_tecnico || 'N/A'}`,
+      `Territorio: ${vistoria.agenda?.territorio || 'N/A'}`,
+    ];
+    headerLines.forEach((line, index) => doc.text(line, 14, 28 + index * 6));
+
+    let y = 84;
+    doc.setFont('Helvetica', 'bold');
+    doc.text('Checklist', 14, y);
+    y += 8;
+
+    (vistoria.checklist_itens || []).forEach((item, index) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 18;
+      }
+
+      const label = getQualityQuestionLabel(item.item_key);
+      const lines = doc.splitTextToSize(`${index + 1}. ${label}`, 180);
+      doc.setFont('Helvetica', 'bold');
+      doc.text(lines, 14, y);
+      y += lines.length * 5;
+
+      doc.setFont('Helvetica', 'normal');
+      doc.text(`Resposta: ${item.status || 'N/A'} | Correcao: ${item.status_correcao || 'Pendente'}`, 14, y);
+      y += 6;
+      if (item.observacao) {
+        const obsLines = doc.splitTextToSize(`Observacao: ${item.observacao}`, 180);
+        doc.text(obsLines, 14, y);
+        y += obsLines.length * 5;
+      }
+      y += 4;
+    });
+
+    doc.save(`laudo_qualidade_${vistoria.id}.pdf`);
+  };
+
+  const handleGeneratePdf = async (item) => {
+    try {
+      const vistoria = await apiFetch(`/api/vistorias/${item.id}/data-pdf`);
+      generateQualityPdf(vistoria);
+    } catch {
+      toast.error('Erro ao gerar laudo de qualidade.');
+    }
   };
 
   const regionalOptions = useMemo(() => {
@@ -346,6 +421,9 @@ const Backlog = () => {
                             )}
                             <button title="Resolver" onClick={() => handleResolverClick(row)}>
                               <FiCheckSquare />
+                            </button>
+                            <button title="Gerar Laudo" onClick={() => handleGeneratePdf(row)}>
+                              <FiDownload />
                             </button>
                           </ActionButtons>
                         </td>

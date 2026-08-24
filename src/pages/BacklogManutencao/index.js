@@ -49,7 +49,7 @@ const TableSkeleton = () => (
   <tbody>
     {[...Array(5)].map((_, index) => (
       <tr key={index}>
-        {[...Array(12)].map((__, i) => (
+        {[...Array(13)].map((__, i) => (
           <td key={i}>
             <SkeletonText />
           </td>
@@ -69,6 +69,7 @@ const Kpi = ({ title, value }) => (
 const BacklogManutencao = () => {
   const { user, logout, apiFetch } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin';
 
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -234,10 +235,16 @@ const BacklogManutencao = () => {
   };
 
   const handleExport = async () => {
+    if (!isAdmin) {
+      toast.warn('Exportação disponível apenas para administrador.');
+      return;
+    }
+
     if (!exportDates.start || !exportDates.end) {
       toast.warn('Informe o período para exportação.');
       return;
     }
+
     setIsExporting(true);
     try {
       const token = user?.token;
@@ -300,50 +307,52 @@ const BacklogManutencao = () => {
           )}
         </KpiGrid>
 
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          flexWrap: 'wrap',
-          padding: '14px 16px',
-          background: 'var(--bg-1)',
-          border: '1px solid var(--border-0)',
-          borderRadius: 'var(--radius-1)',
-          marginBottom: '16px',
-        }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--ink-1)', marginRight: '4px' }}>
-            <FiDownload style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-            Exportar Relatório Analítico
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <input
-              type="date"
-              value={exportDates.start}
-              onChange={e => setExportDates(p => ({ ...p, start: e.target.value }))}
-              style={{ padding: '6px 10px', background: 'var(--bg-2)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', color: 'var(--ink-0)', fontSize: '0.85rem' }}
-            />
-            <span style={{ color: 'var(--ink-2)', fontSize: '0.8rem' }}>até</span>
-            <input
-              type="date"
-              value={exportDates.end}
-              onChange={e => setExportDates(p => ({ ...p, end: e.target.value }))}
-              style={{ padding: '6px 10px', background: 'var(--bg-2)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', color: 'var(--ink-0)', fontSize: '0.85rem' }}
-            />
-            <button
-              onClick={handleExport}
-              disabled={isExporting}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '7px 16px', background: 'var(--brand)', color: '#fff',
-                border: 'none', borderRadius: 'var(--radius-1)', cursor: 'pointer',
-                fontWeight: 700, fontSize: '0.85rem', opacity: isExporting ? 0.7 : 1,
-              }}
-            >
-              <FiDownload size={14} />
-              {isExporting ? 'Exportando...' : 'Exportar CSV'}
-            </button>
+        {isAdmin && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+            padding: '14px 16px',
+            background: 'var(--bg-1)',
+            border: '1px solid var(--border-0)',
+            borderRadius: 'var(--radius-1)',
+            marginBottom: '16px',
+          }}>
+            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--ink-1)', marginRight: '4px' }}>
+              <FiDownload style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Exportar Relatório Analítico
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type="date"
+                value={exportDates.start}
+                onChange={e => setExportDates(p => ({ ...p, start: e.target.value }))}
+                style={{ padding: '6px 10px', background: 'var(--bg-2)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', color: 'var(--ink-0)', fontSize: '0.85rem' }}
+              />
+              <span style={{ color: 'var(--ink-2)', fontSize: '0.8rem' }}>até</span>
+              <input
+                type="date"
+                value={exportDates.end}
+                onChange={e => setExportDates(p => ({ ...p, end: e.target.value }))}
+                style={{ padding: '6px 10px', background: 'var(--bg-2)', border: '1px solid var(--border-0)', borderRadius: 'var(--radius-1)', color: 'var(--ink-0)', fontSize: '0.85rem' }}
+              />
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '7px 16px', background: 'var(--brand)', color: '#fff',
+                  border: 'none', borderRadius: 'var(--radius-1)', cursor: 'pointer',
+                  fontWeight: 700, fontSize: '0.85rem', opacity: isExporting ? 0.7 : 1,
+                }}
+              >
+                <FiDownload size={14} />
+                {isExporting ? 'Exportando...' : 'Exportar CSV'}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         <FiltersContainer>
           <FilterField>
@@ -423,6 +432,7 @@ const BacklogManutencao = () => {
                 <th>ID Vistoria</th>
                 <th>Técnico</th>
                 <th>SA</th>
+                <th>Motivo da Vistoria</th>
                 <th>Data Laudo</th>
                 <th>Data SLA 72h</th>
                 <th>SLA</th>
@@ -447,6 +457,7 @@ const BacklogManutencao = () => {
                       <td>{row.id}</td>
                       <td>{row.tecnico}</td>
                       <td>{row.protocolo}</td>
+                      <td>{row.motivoVistoria || 'N/A'}</td>
                       <td>{row.data}</td>
                       <td>{row.dataSla}</td>
                       <td><StatusTag status={row.sla}>{row.sla}</StatusTag></td>
@@ -454,7 +465,7 @@ const BacklogManutencao = () => {
                       <td><StatusTag status={row.correcaoStatus}>{row.correcaoStatus || 'Sem informação'}</StatusTag></td>
                       <td>
                         <ActionButtons>
-                          {user?.role === 'admin' && (
+                          {isAdmin && (
                             <button title="Ver Detalhes" onClick={() => navigate(`/vistoria-manutencao/${row.id}`)}>
                               <FiEye />
                             </button>
@@ -471,7 +482,7 @@ const BacklogManutencao = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="12" style={{ textAlign: 'center', padding: '16px' }}>
+                    <td colSpan="13" style={{ textAlign: 'center', padding: '16px' }}>
                       Nenhum resultado encontrado para os filtros aplicados.
                     </td>
                   </tr>
