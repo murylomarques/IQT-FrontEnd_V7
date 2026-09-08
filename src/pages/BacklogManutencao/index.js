@@ -175,7 +175,22 @@ const BacklogManutencao = () => {
     navigate(`/resolver-manutencao/${item.id}`, { state: { sa: item.protocolo } });
   };
 
-  const generateMaintenancePdf = (vistoria) => {
+  const carregarImagemBase64 = (url) =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.src = url;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg'));
+      };
+      img.onerror = reject;
+    });
+
+  const generateMaintenancePdf = async (vistoria) => {
     const doc = new jsPDF();
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(16);
@@ -199,7 +214,11 @@ const BacklogManutencao = () => {
     doc.text('Checklist', 14, y);
     y += 8;
 
-    (vistoria.checklist_itens || []).filter(isVisibleMaintenanceChecklistItem).forEach((item, index) => {
+    const itens = (vistoria.checklist_itens || []).filter(isVisibleMaintenanceChecklistItem);
+
+    for (let index = 0; index < itens.length; index += 1) {
+      const item = itens[index];
+
       if (y > 270) {
         doc.addPage();
         y = 18;
@@ -219,7 +238,29 @@ const BacklogManutencao = () => {
         y += obsLines.length * 5;
       }
       y += 4;
-    });
+
+      if (item.foto_path) {
+        if (y + 55 > 280) { doc.addPage(); y = 18; }
+        try {
+          const base64 = await carregarImagemBase64(`${API_BASE_URL}/storage/${item.foto_path}`);
+          doc.text('Foto do item:', 14, y); y += 5;
+          doc.addImage(base64, 'JPEG', 14, y, 55, 50); y += 58;
+        } catch {
+          doc.text('Foto do item indisponível.', 14, y); y += 8;
+        }
+      }
+
+      if (item.foto_correcao_path) {
+        if (y + 55 > 280) { doc.addPage(); y = 18; }
+        try {
+          const base64 = await carregarImagemBase64(`${API_BASE_URL}/storage/${item.foto_correcao_path}`);
+          doc.text(`Foto da correção (${item.status_correcao || 'Pendente'}):`, 14, y); y += 5;
+          doc.addImage(base64, 'JPEG', 14, y, 55, 50); y += 58;
+        } catch {
+          doc.text('Foto da correção indisponível.', 14, y); y += 8;
+        }
+      }
+    }
 
     doc.save(`laudo_manutencao_${vistoria.id}.pdf`);
   };
@@ -227,7 +268,7 @@ const BacklogManutencao = () => {
   const handleGeneratePdf = async (item) => {
     try {
       const vistoria = await apiFetch(`/api/manutencao/vistorias/${item.id}/data-pdf`);
-      generateMaintenancePdf(vistoria);
+      await generateMaintenancePdf(vistoria);
     } catch {
       toast.error('Erro ao gerar laudo de manutenção.');
     }
