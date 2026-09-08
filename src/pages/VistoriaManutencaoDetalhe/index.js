@@ -63,7 +63,7 @@ const genericMotivoValues = new Set([
 const getMotivoVistoria = (info) => {
   if (info?.motivo_vistoria_resolvido) return info.motivo_vistoria_resolvido;
 
-  const candidates = [info?.motivo_vistoria, info?.tipo_trabalho];
+  const candidates = [info?.motivo_caso, info?.motivo_vistoria, info?.tipo_trabalho];
   const motivo = candidates.find(value => {
     const normalized = normalizeAnswer(value || '');
     return normalized && !genericMotivoValues.has(normalized);

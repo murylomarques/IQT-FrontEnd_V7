@@ -33,7 +33,7 @@ const normalizeText = (value = '') =>
 const getMotivoVistoria = (agenda) => {
   if (agenda?.motivo_vistoria_resolvido) return agenda.motivo_vistoria_resolvido;
 
-  const candidates = [agenda?.motivo_vistoria, agenda?.tipo_trabalho];
+  const candidates = [agenda?.motivo_caso, agenda?.motivo_vistoria, agenda?.tipo_trabalho];
   const motivo = candidates.find(value => {
     const normalized = normalizeText(value || '');
     return normalized && !genericMotivoValues.has(normalized);
