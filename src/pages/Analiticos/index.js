@@ -32,6 +32,7 @@ const UserModal = ({ user, empresas, cargos, regionais, onClose, onSave }) => {
     empresa_id: user?.empresa_id || '',
     cargo_id: user?.cargo_id || '',
     regional_id: user?.regional_id || '',
+    territorio_manutencao: user?.territorio_manutencao || '',
   });
 
   const set = (e) => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
@@ -77,6 +78,15 @@ const UserModal = ({ user, empresas, cargos, regionais, onClose, onSave }) => {
                 <option value="">Selecione...</option>
                 {regionais.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
               </FieldSelect>
+            </FieldLabel>
+            <FieldLabel>
+              Território (manutenção)
+              <FieldInput
+                name="territorio_manutencao"
+                value={form.territorio_manutencao}
+                onChange={set}
+                placeholder="Ex: TERRITÓRIO CAMPINAS"
+              />
             </FieldLabel>
           </FormGrid>
         </ModalBody>
@@ -314,14 +324,15 @@ const Admin = () => {
                     <th>Empresa</th>
                     <th>Cargo</th>
                     <th>Regional</th>
+                    <th>Território</th>
                     <th style={{ textAlign: 'right' }}>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'rgba(255,255,255,0.3)' }}>Carregando...</td></tr>
+                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'rgba(255,255,255,0.3)' }}>Carregando...</td></tr>
                   ) : filteredUsers.length === 0 ? (
-                    <tr><td colSpan={5}><EmptyState><FiUsers /><p>Nenhum usuário encontrado</p></EmptyState></td></tr>
+                    <tr><td colSpan={6}><EmptyState><FiUsers /><p>Nenhum usuário encontrado</p></EmptyState></td></tr>
                   ) : filteredUsers.map(u => (
                     <tr key={u.id}>
                       <td>
@@ -336,6 +347,7 @@ const Admin = () => {
                       <td><Chip>{u.empresa?.nome || '—'}</Chip></td>
                       <td><Chip>{u.cargo?.nome || '—'}</Chip></td>
                       <td>{u.regional?.nome || '—'}</td>
+                      <td>{u.territorio_manutencao || '—'}</td>
                       <td>
                         <ActionGroup style={{ justifyContent: 'flex-end' }}>
                           <IconBtn title="Editar" onClick={() => openModal('users', u)}><FiEdit2 /></IconBtn>
