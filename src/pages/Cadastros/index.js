@@ -83,6 +83,7 @@ const Cadastros = () => {
 
   // --- Estados de Dados ---
   const [vistoriasSeguranca, setVistoriasSeguranca] = useState([]);
+  const canExportManutencao = user?.role === 'admin';
 
   // --- Refs e Estados para Geração de PDFs ---
   const [pdfData, setPdfData] = useState(null);
@@ -279,6 +280,11 @@ const Cadastros = () => {
   };
 
   const handleExportManutencaoCsv = async () => {
+    if (!canExportManutencao) {
+      toast.warn('Exportacao de manutencao permitida apenas para administrador.');
+      return;
+    }
+
     if (!startDate || !endDate) {
       toast.warn('Por favor, selecione a data de início e a data de fim.');
       return;
@@ -514,10 +520,12 @@ const Cadastros = () => {
               <span>CSV Segurança</span>
             </ExportButton>
 
-            <ExportButton onClick={handleExportManutencaoCsv} disabled={isExporting}>
-              <FiDownload size={16} />
-              <span>CSV Manutenção</span>
-            </ExportButton>
+            {canExportManutencao && (
+              <ExportButton onClick={handleExportManutencaoCsv} disabled={isExporting}>
+                <FiDownload size={16} />
+                <span>CSV Manutenção</span>
+              </ExportButton>
+            )}
 
             <ExportButton onClick={handleExportPdfs} disabled={isExporting}>
               <FiFile size={16} />

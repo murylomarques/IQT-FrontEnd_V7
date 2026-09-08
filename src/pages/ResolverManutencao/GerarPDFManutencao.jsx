@@ -7,7 +7,21 @@ import {
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://iqt.desktop.com.br';
 
-const genericMotivoValues = new Set(['manutencao', 'ativacao']);
+const genericMotivoValues = new Set([
+  'manutencao',
+  'manutencao corretiva',
+  'manutencao preventiva',
+  'ativacao',
+  'instalacao',
+  'instalacao fibra',
+  'reparo',
+  'reparo prev',
+  'mudanca de endereco',
+  'mud end',
+  'retirada',
+  'outros servicos',
+  'servicos adicionais',
+]);
 
 const normalizeText = (value = '') =>
   value
@@ -17,6 +31,8 @@ const normalizeText = (value = '') =>
     .trim();
 
 const getMotivoVistoria = (agenda) => {
+  if (agenda?.motivo_vistoria_resolvido) return agenda.motivo_vistoria_resolvido;
+
   const candidates = [agenda?.motivo_vistoria, agenda?.tipo_trabalho];
   const motivo = candidates.find(value => {
     const normalized = normalizeText(value || '');

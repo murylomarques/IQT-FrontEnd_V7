@@ -44,9 +44,25 @@ const normalizeAnswer = (value = '') =>
     .toLowerCase()
     .trim();
 
-const genericMotivoValues = new Set(['manutencao', 'ativacao']);
+const genericMotivoValues = new Set([
+  'manutencao',
+  'manutencao corretiva',
+  'manutencao preventiva',
+  'ativacao',
+  'instalacao',
+  'instalacao fibra',
+  'reparo',
+  'reparo prev',
+  'mudanca de endereco',
+  'mud end',
+  'retirada',
+  'outros servicos',
+  'servicos adicionais',
+]);
 
 const getMotivoVistoria = (info) => {
+  if (info?.motivo_vistoria_resolvido) return info.motivo_vistoria_resolvido;
+
   const candidates = [info?.motivo_vistoria, info?.tipo_trabalho];
   const motivo = candidates.find(value => {
     const normalized = normalizeAnswer(value || '');

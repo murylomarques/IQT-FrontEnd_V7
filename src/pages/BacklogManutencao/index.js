@@ -88,6 +88,7 @@ const BacklogManutencao = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   const [empresaOptions, setEmpresaOptions] = useState([]);
+  const canExportMaintenance = user?.role === 'admin';
 
   useEffect(() => {
     const fetchBacklogData = async () => {
@@ -186,7 +187,6 @@ const BacklogManutencao = () => {
       `ID: ${vistoria.id}`,
       `Status: ${vistoria.status_laudo || 'N/A'}`,
       `Resultado: ${vistoria.resultado_final || 'N/A'}`,
-      `Retorno do tecnico: ${vistoria.retorno_tecnico || 'N/A'}`,
       `SA: ${vistoria.agenda?.numero_compromisso || vistoria.agenda?.caso || 'N/A'}`,
       `Tecnico: ${vistoria.agenda?.nome_tecnico || 'N/A'}`,
       `Empresa: ${vistoria.agenda?.empresa_tecnico || 'N/A'}`,
@@ -234,6 +234,11 @@ const BacklogManutencao = () => {
   };
 
   const handleExport = async () => {
+    if (!canExportMaintenance) {
+      toast.warn('Exportacao de manutencao permitida apenas para administrador.');
+      return;
+    }
+
     if (!exportDates.start || !exportDates.end) {
       toast.warn('Informe o período para exportação.');
       return;
@@ -300,6 +305,7 @@ const BacklogManutencao = () => {
           )}
         </KpiGrid>
 
+        {canExportMaintenance && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -344,6 +350,7 @@ const BacklogManutencao = () => {
             </button>
           </div>
         </div>
+        )}
 
         <FiltersContainer>
           <FilterField>
