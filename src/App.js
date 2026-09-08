@@ -82,7 +82,7 @@ function App() {
             <Route
               path="/manutencao/backlog"
               element={
-                <ProtectedRoute allowedRoles={['admin', 'fiscal', 'terceirizado']}>
+                <ProtectedRoute allowedRoles={['admin', 'fiscal', 'terceirizado', 'proprio']}>
                   <BacklogManutencao />
                 </ProtectedRoute>
               }

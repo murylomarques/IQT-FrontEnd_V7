@@ -80,8 +80,9 @@ const MaintenanceCorrectionItem = ({ item, index, total, onItemUpdate, isSubmitt
   const statusCorrecao = item.status_correcao || 'Pendente';
   const isEmAnalise = statusCorrecao === 'Em Análise';
   const isTerceirizado = user.role === 'terceirizado';
+  const isProprio = user.role === 'proprio';
   const isAdmin = user.role === 'admin';
-  const canSubmit = (isTerceirizado || isAdmin) && !isEmAnalise && statusCorrecao !== 'Aprovado';
+  const canSubmit = (isTerceirizado || isProprio || isAdmin) && !isEmAnalise && statusCorrecao !== 'Aprovado';
   const canReview = isAdmin && isEmAnalise;
 
   const statusIcon = statusCorrecao === 'Aprovado'

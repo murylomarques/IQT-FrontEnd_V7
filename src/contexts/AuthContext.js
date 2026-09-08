@@ -19,6 +19,7 @@ const ROLE_MAP = {
   1: 'admin',
   2: 'terceirizado',
   3: 'fiscal',
+  4: 'proprio',
 };
 
 export const AuthProvider = ({ children }) => {
